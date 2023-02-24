@@ -35,6 +35,7 @@ import tempfile
 import zipfile
 
 import xarray
+import s3fs
 import numpy as np
 
 from pygeoapi.provider.base import (BaseProvider,
@@ -63,7 +64,11 @@ class XarrayProvider(BaseProvider):
                 open_func = xarray.open_zarr
             else:
                 open_func = xarray.open_dataset
-            self._data = open_func(self.data)
+            if provider_def['data'].startswith('s3://'):
+                data_to_open = _s3open(self.data)
+            else:
+                data_to_open = self.data
+            self._data = open_func(data_to_open)
             self._data = _convert_float32_to_float64(self._data)
             self._coverage_properties = self._get_coverage_properties()
 
@@ -632,3 +637,8 @@ def _convert_float32_to_float64(data):
             data[var_name].attrs = og_attrs
 
     return data
+
+def _s3open(data):    
+    fs = s3fs.S3FileSystem(anon=True, default_fill_cache=False, 
+                        config_kwargs = {'max_pool_connections': 20})
+    return s3fs.S3Map(data, s3=fs)
