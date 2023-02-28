@@ -43,11 +43,9 @@ from pygeoapi.provider.base import (BaseProvider,
                                     ProviderNoDataError,
                                     ProviderQueryError)
 from pygeoapi.util import read_data
-from pygeoapi.log import setup_logger
 
 
 LOGGER = logging.getLogger(__name__)
-setup_logger({'level': 'DEBUG'})
 
 
 class XarrayProvider(BaseProvider):
