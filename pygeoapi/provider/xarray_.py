@@ -49,6 +49,7 @@ from pygeoapi.log import setup_logger
 LOGGER = logging.getLogger(__name__)
 setup_logger({'level': 'DEBUG'})
 
+
 class XarrayProvider(BaseProvider):
     """Xarray Provider"""
 
@@ -62,7 +63,8 @@ class XarrayProvider(BaseProvider):
         super().__init__(provider_def)
         test_name = provider_def['data']
         LOGGER.debug(f'Starting {test_name}')
-        print(f'This is a test. I am inside of the XarrayProvider with {test_name}')
+        print('This is a test.')
+        print(f'Inside XarrayProvider with {test_name}')
 
         try:
             if provider_def['data'].endswith('.zarr'):
