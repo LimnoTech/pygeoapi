@@ -38,6 +38,7 @@ import xarray
 import s3fs
 import numpy as np
 
+from pygeoapi.log import setup_logger
 from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
                                     ProviderNoDataError,
@@ -58,6 +59,8 @@ class XarrayProvider(BaseProvider):
         """
 
         super().__init__(provider_def)
+        test_name = provider_def['data']
+        LOGGER.debug(f'Starting {test_name}')
 
         try:
             if provider_def['data'].endswith('.zarr'):
@@ -65,10 +68,15 @@ class XarrayProvider(BaseProvider):
             else:
                 open_func = xarray.open_dataset
             if provider_def['data'].startswith('s3://'):
+                LOGGER.debug(f'Data is stored in S3 bucket.')
                 data_to_open = _s3open(self.data)
+                LOGGER.debug(f'Completed S3 Open Function')
             else:
+                LOGGER.debug('Data not stored in S3 bucket.')
                 data_to_open = self.data
+            LOGGER.debug('About to open data...')
             self._data = open_func(data_to_open)
+            LOGGER.debug('Finished opening data...')
             self._data = _convert_float32_to_float64(self._data)
             self._coverage_properties = self._get_coverage_properties()
 
@@ -640,7 +648,9 @@ def _convert_float32_to_float64(data):
 
 
 def _s3open(data):
+    LOGGER.debug(f'Inside _s3open Function.')
     fs = s3fs.S3FileSystem(anon=True,
                            default_fill_cache=False,
                            config_kwargs={'max_pool_connections': 20})
+    LOGGER.debug(f'Created S3 FileSystem.')    
     return s3fs.S3Map(data, s3=fs)
