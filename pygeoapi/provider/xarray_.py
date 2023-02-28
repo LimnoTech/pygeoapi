@@ -68,9 +68,9 @@ class XarrayProvider(BaseProvider):
             else:
                 open_func = xarray.open_dataset
             if provider_def['data'].startswith('s3://'):
-                LOGGER.debug(f'Data is stored in S3 bucket.')
+                LOGGER.debug('Data is stored in S3 bucket.')
                 data_to_open = _s3open(self.data)
-                LOGGER.debug(f'Completed S3 Open Function')
+                LOGGER.debug('Completed S3 Open Function')
             else:
                 LOGGER.debug('Data not stored in S3 bucket.')
                 data_to_open = self.data
@@ -648,9 +648,9 @@ def _convert_float32_to_float64(data):
 
 
 def _s3open(data):
-    LOGGER.debug(f'Inside _s3open Function.')
+    LOGGER.debug('Inside _s3open Function.')
     fs = s3fs.S3FileSystem(anon=True,
                            default_fill_cache=False,
                            config_kwargs={'max_pool_connections': 20})
-    LOGGER.debug(f'Created S3 FileSystem.')    
+    LOGGER.debug('Created S3 FileSystem.')
     return s3fs.S3Map(data, s3=fs)
