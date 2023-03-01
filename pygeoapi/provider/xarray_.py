@@ -29,6 +29,7 @@
 #
 # =================================================================
 
+import sys
 import os
 import logging
 import tempfile
@@ -46,7 +47,14 @@ from pygeoapi.util import read_data
 
 
 LOGGER = logging.getLogger(__name__)
-
+LOGGER.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+        '%(asctime)s | %(process)d | %(module)s:%(funcName)s:%(lineno)d | %(levelname)s: %(message)s'    )
+    
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setLevel(logging.INFO)
+stream_handler.setFormatter(formatter)
+LOGGER.addHandler(stream_handler)
 
 class XarrayProvider(BaseProvider):
     """Xarray Provider"""

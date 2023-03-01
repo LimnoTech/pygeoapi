@@ -59,6 +59,8 @@ def setup_logger(logging_config):
         'NOTSET': logging.NOTSET,
     }
 
+    print("Logging config", flush=True)
+    print(logging_config, flush=True)
     loglevel = loglevels[logging_config['level']]
     print(f'Log Level: {loglevel}', flush=True)
 
