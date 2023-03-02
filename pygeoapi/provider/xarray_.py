@@ -61,8 +61,6 @@ class XarrayProvider(BaseProvider):
         super().__init__(provider_def)
         test_name = provider_def['data']
         LOGGER.debug(f'Starting {test_name}')
-        print('This is a test.', flush=True)
-        print(f'Inside XarrayProvider with {test_name}', flush=True)
 
         try:
             if provider_def['data'].endswith('.zarr'):
@@ -70,32 +68,24 @@ class XarrayProvider(BaseProvider):
             else:
                 open_func = xarray.open_dataset
             if provider_def['data'].startswith('s3://'):
-                print("data is stored in S3 bucket", flush=True)
                 LOGGER.debug('Data is stored in S3 bucket.')
                 data_to_open = _s3open(self.data)
-                print('completed s3 open function', flush=True)
                 LOGGER.debug('Completed S3 Open Function')
             else:
-                print('data not stored in s3 bucket', flush=True)
                 LOGGER.debug('Data not stored in S3 bucket.')
                 data_to_open = self.data
             LOGGER.debug('About to open data...')
-            print('about to open data', flush=True)
             self._data = open_func(data_to_open)
             LOGGER.debug('Finished opening data...')
-            print('finsihed opening data', flush=True)
             self._data = _convert_float32_to_float64(self._data)
-            print('finished converting float32 to float 64')
             self._coverage_properties = self._get_coverage_properties()
-            print('finished _coverage_properties', flush=True)
 
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
                          self._coverage_properties['time_axis_label']]
-            print('set axes', flush=True)
 
             self.fields = self._coverage_properties['fields']
-            print('set fields')
+            
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
@@ -442,8 +432,6 @@ class XarrayProvider(BaseProvider):
 
         time_var, y_var, x_var = [None, None, None]
         for coord in self._data.coords:
-            print("----")
-            print(coord)
             if coord.lower() == 'time':
                 time_var = coord
                 continue
@@ -662,10 +650,8 @@ def _convert_float32_to_float64(data):
 
 def _s3open(data):
     LOGGER.debug('Inside _s3open Function.')
-    print('inside s3 function', flush=True)
     fs = s3fs.S3FileSystem(anon=True,
                            default_fill_cache=False,
                            config_kwargs={'max_pool_connections': 20})
     LOGGER.debug('Created S3 FileSystem.')
-    print('set up filesystem', flush=True)
     return s3fs.S3Map(data, s3=fs)
