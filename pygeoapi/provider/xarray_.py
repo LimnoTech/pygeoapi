@@ -84,8 +84,10 @@ class XarrayProvider(BaseProvider):
             self._data = open_func(data_to_open)
             LOGGER.debug('Finished opening data...')
             print('finsihed opening data', flush=True)
+            print(self._data)
             self._data = _convert_float32_to_float64(self._data)
             print('finished converting float32 to float 64')
+            print(self._data)
             self._coverage_properties = self._get_coverage_properties()
             print('finished _coverage_properties', flush=True)
 
