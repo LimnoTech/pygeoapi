@@ -84,14 +84,8 @@ class XarrayProvider(BaseProvider):
             self._data = open_func(data_to_open)
             LOGGER.debug('Finished opening data...')
             print('finsihed opening data', flush=True)
-            for coord in self._data.coords:
-                print("----")
-                print(coord)
-                self._data.coords[coord].attrs
-                print("----")
             self._data = _convert_float32_to_float64(self._data)
             print('finished converting float32 to float 64')
-            print(self._data)
             self._coverage_properties = self._get_coverage_properties()
             print('finished _coverage_properties', flush=True)
 
@@ -450,7 +444,6 @@ class XarrayProvider(BaseProvider):
         for coord in self._data.coords:
             print("----")
             print(coord)
-            self._data.coords[coord].attrs
             if coord.lower() == 'time':
                 time_var = coord
                 continue
