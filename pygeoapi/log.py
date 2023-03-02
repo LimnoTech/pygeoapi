@@ -43,8 +43,6 @@ def setup_logger(logging_config):
 
     :returns: void (creates logging instance)
     """
-    print('setup_logger called', flush=True)
-
 
     log_format = \
         '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
@@ -59,10 +57,7 @@ def setup_logger(logging_config):
         'NOTSET': logging.NOTSET,
     }
 
-    print("Logging config", flush=True)
-    print(logging_config, flush=True)
     loglevel = loglevels[logging_config['level']]
-    print(f'Log Level: {loglevel}', flush=True)
 
     if 'logfile' in logging_config:
         logging.basicConfig(level=loglevel, datefmt=date_format,

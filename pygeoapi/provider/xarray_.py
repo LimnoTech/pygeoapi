@@ -47,14 +47,6 @@ from pygeoapi.util import read_data
 
 
 LOGGER = logging.getLogger(__name__)
-LOGGER.setLevel(logging.DEBUG)
-formatter = logging.Formatter(
-        '%(asctime)s | %(process)d | %(module)s:%(funcName)s:%(lineno)d | %(levelname)s: %(message)s'    )
-    
-stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setLevel(logging.INFO)
-stream_handler.setFormatter(formatter)
-LOGGER.addHandler(stream_handler)
 
 class XarrayProvider(BaseProvider):
     """Xarray Provider"""
@@ -93,13 +85,17 @@ class XarrayProvider(BaseProvider):
             LOGGER.debug('Finished opening data...')
             print('finsihed opening data', flush=True)
             self._data = _convert_float32_to_float64(self._data)
+            print('finished converting float32 to float 64')
             self._coverage_properties = self._get_coverage_properties()
+            print('finished _coverage_properties', flush=True)
 
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
                          self._coverage_properties['time_axis_label']]
+            print('set axes', flush=True)
 
             self.fields = self._coverage_properties['fields']
+            print('set fields')
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
