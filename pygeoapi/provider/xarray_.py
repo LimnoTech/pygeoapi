@@ -84,7 +84,11 @@ class XarrayProvider(BaseProvider):
             self._data = open_func(data_to_open)
             LOGGER.debug('Finished opening data...')
             print('finsihed opening data', flush=True)
-            print(self._data)
+            for coord in self._data.coords:
+                print("----")
+                print(coord)
+                self._data.coords[coord].attrs
+                print("----")
             self._data = _convert_float32_to_float64(self._data)
             print('finished converting float32 to float 64')
             print(self._data)
