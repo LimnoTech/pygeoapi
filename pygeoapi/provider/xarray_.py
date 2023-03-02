@@ -444,6 +444,9 @@ class XarrayProvider(BaseProvider):
 
         time_var, y_var, x_var = [None, None, None]
         for coord in self._data.coords:
+            print("----")
+            print(coord)
+            self._data.coords[coord].attrs
             if coord.lower() == 'time':
                 time_var = coord
                 continue
