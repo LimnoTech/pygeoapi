@@ -456,8 +456,6 @@ class XarrayProvider(BaseProvider):
             if self._data.coords[coord].attrs['units'] == 'degrees_east':
                 x_var = coord
                 continue
-            else:
-                print(f'additional coord: {coord}', flush=True)
 
         if self.x_field is None:
             self.x_field = x_var
@@ -465,6 +463,8 @@ class XarrayProvider(BaseProvider):
             self.y_field = y_var
         if self.time_field is None:
             self.time_field = time_var
+
+        print('finsihed assigning x, y, time fields', flush=True)
 
         # It would be preferable to use CF attributes to get width
         # resolution etc but for now a generic approach is used to asess
@@ -501,6 +501,8 @@ class XarrayProvider(BaseProvider):
                            - self._data.coords[self.y_field].values[0]),
             'restime': self.get_time_resolution()
         }
+        print('finished setting up properties dict', flush=True)
+        print(properties, flush=True)
 
         if 'crs' in self._data.variables.keys():
             properties['bbox_crs'] = f'http://www.opengis.net/def/crs/OGC/1.3/{self._data.crs.epsg_code}'  # noqa
