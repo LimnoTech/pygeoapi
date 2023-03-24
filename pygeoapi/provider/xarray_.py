@@ -71,8 +71,8 @@ class XarrayProvider(BaseProvider):
             if provider_def['data'].startswith('s3://'):
                 LOGGER.debug('Data is stored in S3 bucket.')
                 try:
-                    print(provider_def)
-                    print(provider_def['storage_options'])
+                    print(provider_def, flush=True)
+                    print(provider_def['storage_options'], flush=True)
                     self._storage_options = provider_def['storage_options']
                 except KeyError:
                     raise RuntimeError('storage_options required for s3.')
