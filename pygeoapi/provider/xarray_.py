@@ -456,6 +456,8 @@ class XarrayProvider(BaseProvider):
             if self._data.coords[coord].attrs['units'] == 'degrees_east':
                 x_var = coord
                 continue
+            else:
+                print(f'additional coord: {coord}', flush=True)
 
         if self.x_field is None:
             self.x_field = x_var
