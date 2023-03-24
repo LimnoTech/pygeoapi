@@ -74,10 +74,13 @@ class XarrayProvider(BaseProvider):
                     print(provider_def, flush=True)
                     print(provider_def['storage_options'], flush=True)
                     self._storage_options = provider_def['storage_options']
+                    print(f'did this, here are the storage opts: {self._storage_options}', flush=True)
                 except KeyError:
                     raise RuntimeError('storage_options required for s3.')
+                
                 data_to_open = fsspec.get_mapper(self.data,
                                                  **self._storage_options)
+                print('finished data_to_open...', flush=True)
                 LOGGER.debug('Completed S3 Open Function')
             else:
                 LOGGER.debug('Data not stored in S3 bucket.')
@@ -85,8 +88,12 @@ class XarrayProvider(BaseProvider):
             LOGGER.debug('About to open data...')
             self._data = open_func(data_to_open)
             LOGGER.debug('Finished opening data...')
+            print('finished opening data...', flush=True)
             self._data = _convert_float32_to_float64(self._data)
+            print('converted to floats...', flush=True)
             self._coverage_properties = self._get_coverage_properties()
+            print('finished coverage properties', flush=True)
+            print(self._coverage_properties, flush=True)
 
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
