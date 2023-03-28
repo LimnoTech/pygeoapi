@@ -71,16 +71,12 @@ class XarrayProvider(BaseProvider):
             if provider_def['data'].startswith('s3://'):
                 LOGGER.debug('Data is stored in S3 bucket.')
                 try:
-                    print(provider_def, flush=True)
-                    print(provider_def['storage_options'], flush=True)
                     self._storage_options = provider_def['storage_options']
-                    print(f'did this, here are the storage opts: {self._storage_options}', flush=True)
                 except KeyError:
                     raise RuntimeError('storage_options required for s3.')
                 
                 data_to_open = fsspec.get_mapper(self.data,
                                                  **self._storage_options)
-                print('finished data_to_open...', flush=True)
                 LOGGER.debug('Completed S3 Open Function')
             else:
                 LOGGER.debug('Data not stored in S3 bucket.')
@@ -88,12 +84,8 @@ class XarrayProvider(BaseProvider):
             LOGGER.debug('About to open data...')
             self._data = open_func(data_to_open)
             LOGGER.debug('Finished opening data...')
-            print('finished opening data...', flush=True)
             self._data = _convert_float32_to_float64(self._data)
-            print('converted to floats...', flush=True)
             self._coverage_properties = self._get_coverage_properties()
-            print('finished coverage properties', flush=True)
-            print(self._coverage_properties, flush=True)
 
             self.axes = [self._coverage_properties['x_axis_label'],
                          self._coverage_properties['y_axis_label'],
@@ -464,8 +456,6 @@ class XarrayProvider(BaseProvider):
         if self.time_field is None:
             self.time_field = time_var
 
-        print('finsihed assigning x, y, time fields', flush=True)
-
         # It would be preferable to use CF attributes to get width
         # resolution etc but for now a generic approach is used to asess
         # all of the attributes based on lat lon vars
@@ -501,8 +491,6 @@ class XarrayProvider(BaseProvider):
                            - self._data.coords[self.y_field].values[0]),
             'restime': self.get_time_resolution()
         }
-        print('finished setting up properties dict', flush=True)
-        print(properties, flush=True)
 
         if 'crs' in self._data.variables.keys():
             properties['bbox_crs'] = f'http://www.opengis.net/def/crs/OGC/1.3/{self._data.crs.epsg_code}'  # noqa
