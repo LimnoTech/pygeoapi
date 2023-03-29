@@ -341,6 +341,7 @@ class XarrayProvider(BaseProvider):
         minx, miny, maxx, maxy = metadata['bbox']
         mint, maxt = metadata['time']
 
+        LOGGER.debug('Accessing coords')
         try:
             tmp_min = data.coords[self.y_field].values[0]
         except IndexError:
@@ -355,6 +356,7 @@ class XarrayProvider(BaseProvider):
             miny = tmp_max
             maxy = tmp_min
 
+        LOGGER.debug('Creating cj')
         cj = {
             'type': 'Coverage',
             'domain': {
@@ -390,8 +392,10 @@ class XarrayProvider(BaseProvider):
         }
 
         for variable in range_type:
+            LOGGER.debug(f'Getting parameter metadata for {variable}')
             pm = self._get_parameter_metadata(
                 variable, self._data[variable].attrs)
+            LOGGER.debug(f'Finished getting parameter metadat for {variable}')
 
             parameter = {
                 'type': 'Parameter',
