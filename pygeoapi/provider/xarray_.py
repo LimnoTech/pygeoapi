@@ -75,8 +75,7 @@ class XarrayProvider(BaseProvider):
                 except KeyError:
                     raise RuntimeError('storage_options required for s3.')
                 
-                data_to_open = fsspec.get_mapper(self.data,
-                                                 **self._storage_options)
+                data_to_open = _s3open(self.data, self._storage_options)
                 LOGGER.debug('Completed S3 Open Function')
             else:
                 LOGGER.debug('Data not stored in S3 bucket.')
@@ -659,10 +658,8 @@ def _convert_float32_to_float64(data):
     return data
 
 
-def _s3open(data):
+def _s3open(data, storage_options):
     LOGGER.debug('Inside _s3open Function.')
-    fs = s3fs.S3FileSystem(anon=True,
-                           default_fill_cache=False,
-                           config_kwargs={'max_pool_connections': 20})
+    fs = s3fs.S3FileSystem(**storage_options)
     LOGGER.debug('Created S3 FileSystem.')
     return s3fs.S3Map(data, s3=fs)
