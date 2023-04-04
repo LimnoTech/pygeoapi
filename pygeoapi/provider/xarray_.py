@@ -231,6 +231,11 @@ class XarrayProvider(BaseProvider):
 
         data = self._data[[*properties]]
 
+        LOGGER.debug(f'subsets: {subsets}')
+        LOGGER.debug(f'bbox: {bbox}')
+        LOGGER.debug(f'bbox_crs: {bbox_crs}')
+        LOGGER.debug(f'datetime_: {datetime_}')
+
         if any([self._coverage_properties['x_axis_label'] in subsets,
                 self._coverage_properties['y_axis_label'] in subsets,
                 self._coverage_properties['time_axis_label'] in subsets,
