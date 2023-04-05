@@ -83,7 +83,7 @@ class XarrayProvider(BaseProvider):
             LOGGER.debug('About to open data...')
             self._data = open_func(data_to_open)
             LOGGER.debug('Finished opening data...')
-            self._data = _convert_float32_to_float64(self._data)
+            # self._data = _convert_float32_to_float64(self._data) # considerably slows the process
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
