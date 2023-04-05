@@ -399,7 +399,7 @@ class XarrayProvider(BaseProvider):
             LOGGER.debug(f'Getting parameter metadata for {variable}')
             pm = self._get_parameter_metadata(
                 variable, self._data[variable].attrs)
-            LOGGER.debug(f'Finished getting parameter metadat for {variable}')
+            LOGGER.debug(f'Finished getting parameter metadata for {variable}')
 
             parameter = {
                 'type': 'Parameter',
@@ -419,6 +419,7 @@ class XarrayProvider(BaseProvider):
 
         try:
             for key in cj['parameters'].keys():
+                LOGGER.debug(f'Starting {key}')
                 cj['ranges'][key] = {
                     'type': 'NdArray',
                     'dataType': str(self._data[variable].dtype),
@@ -429,9 +430,12 @@ class XarrayProvider(BaseProvider):
                               metadata['width'],
                               metadata['time_steps']]
                 }
+                LOGGER.debug(f'Finished adding ranges to cj for {key}')
 
                 data = data.fillna(None)
+                LOGGER.debug(f'Finished filling null values for {key}')
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
+                LOGGER.debug(f'Finshed flattening to list for {key}')
         except IndexError as err:
             LOGGER.warning(err)
             raise ProviderQueryError('Invalid query parameter')
