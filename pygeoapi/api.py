@@ -3971,17 +3971,22 @@ def validate_datetime(resource_def, datetime_=None) -> str:
     #
     # NOTE: needs testing when passing partials from API to backend
 
-    LOGGER.debug('Validating datetime...')
+    LOGGER.debug(f'Validating datetime {datetime_}...')
     datetime_invalid = False
 
     if datetime_ is not None and 'temporal' in resource_def:
+        LOGGER.debug('Starting dateparse...')
 
         dateparse_begin = partial(dateparse, default=datetime.min)
         dateparse_end = partial(dateparse, default=datetime.max)
         unix_epoch = datetime(1970, 1, 1, 0, 0, 0)
         dateparse_ = partial(dateparse, default=unix_epoch)
+        LOGGER.debug(f'dateparse_begin: {dateparse_begin}')
+        LOGGER.debug(f'dateparse_end: {dateparse_end}')
+        LOGGER.debug(f'dateparse_: {dateparse_}')
 
         te = resource_def['temporal']
+        LOGGER.debug(f'te: {te}')
 
         try:
             if te['begin'] is not None and te['begin'].tzinfo is None:
@@ -4032,7 +4037,8 @@ def validate_datetime(resource_def, datetime_=None) -> str:
                 (te['end'] is not None and datetime__ != '..' and
                     datetime__ > te['end'])
             ])
-
+        LOGGER.debug(f'te: {te}')
+        
     if datetime_invalid:
         msg = 'datetime parameter out of range'
         LOGGER.debug(msg)
