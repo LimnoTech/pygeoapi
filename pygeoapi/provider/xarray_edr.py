@@ -88,6 +88,9 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
             if wkt.type == 'Point':
                 query_params[self._coverage_properties['x_axis_label']] = wkt.x
                 query_params[self._coverage_properties['y_axis_label']] = wkt.y
+            elif wkt.type == 'MultiPoint':
+                query_params[self._coverage_properties['x_axis_label']] = [f.x for f in wkt.geoms]
+                query_params[self._coverage_properties['y_axis_label']] = [f.y for f in wkt.geoms]
             elif wkt.type == 'LineString':
                 query_params[self._coverage_properties['x_axis_label']] = wkt.xy[0]  # noqa
                 query_params[self._coverage_properties['y_axis_label']] = wkt.xy[1]  # noqa
