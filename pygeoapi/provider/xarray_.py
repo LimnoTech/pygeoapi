@@ -416,7 +416,11 @@ class XarrayProvider(BaseProvider):
             }
 
             cj['parameters'][pm['id']] = parameter
-
+        
+        LOGGER.debug('Start filling null')
+        data = data.fillna(None) # move outside of loop.
+        LOGGER.debug('Finish filling null values')
+        
         try:
             for key in cj['parameters'].keys():
                 LOGGER.debug(f'Starting {key}')
@@ -431,8 +435,6 @@ class XarrayProvider(BaseProvider):
                               metadata['time_steps']]
                 }
                 LOGGER.debug(f'Finished adding ranges to cj for {key}')
-                # data = data.fillna(None)
-                # LOGGER.debug(f'Finished filling null values for {key}')
                 cj['ranges'][key]['values'] = data[key].values.flatten().tolist()  # noqa
                 LOGGER.debug(f'Finshed flattening to list for {key}')
         except IndexError as err:

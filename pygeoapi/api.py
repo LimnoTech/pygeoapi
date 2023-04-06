@@ -3579,6 +3579,7 @@ class API:
         try:
             datetime_ = validate_datetime(collections[dataset]['extents'],
                                           datetime_)
+            LOGGER.debug(f'Validated datetime: {datetime_}')
         except ValueError as err:
             msg = str(err)
             return self.get_exception(
@@ -3970,6 +3971,7 @@ def validate_datetime(resource_def, datetime_=None) -> str:
     #
     # NOTE: needs testing when passing partials from API to backend
 
+    LOGGER.debug('Validating datetime...')
     datetime_invalid = False
 
     if datetime_ is not None and 'temporal' in resource_def:
