@@ -419,6 +419,7 @@ class XarrayProvider(BaseProvider):
         
         LOGGER.debug('Start filling null')
         data = data.fillna(None) # move outside of loop.
+        data = _convert_float32_to_float64(data) # move from init to here to reduce time
         LOGGER.debug('Finish filling null values')
         
         try:
