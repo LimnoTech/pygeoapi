@@ -79,7 +79,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         query_params = {}
 
         LOGGER.debug(f'Query parameters: {kwargs}')
-        
+
         LOGGER.debug(f"Query type: {kwargs.get('query_type')}")
 
         wkt = kwargs.get('wkt')
@@ -90,8 +90,8 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 query_params[self._coverage_properties['x_axis_label']] = wkt.x
                 query_params[self._coverage_properties['y_axis_label']] = wkt.y
             elif wkt.type == 'MultiPoint':
-                query_params[self._coverage_properties['x_axis_label']] = [f.x for f in wkt.geoms]
-                query_params[self._coverage_properties['y_axis_label']] = [f.y for f in wkt.geoms]
+                query_params[self._coverage_properties['x_axis_label']] = [f.x for f in wkt.geoms] # noqa
+                query_params[self._coverage_properties['y_axis_label']] = [f.y for f in wkt.geoms] # noqa
             elif wkt.type == 'LineString':
                 query_params[self._coverage_properties['x_axis_label']] = wkt.xy[0]  # noqa
                 query_params[self._coverage_properties['y_axis_label']] = wkt.xy[1]  # noqa
@@ -115,17 +115,17 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 LOGGER.debug('Splitting time range')
                 begin, end = datetime_.split('/')
                 if begin == '..':
-                    begin = self._data[self._coverage_properties['time_axis_label']].min().values
+                    begin = self._data[self._coverage_properties['time_axis_label']].min().values  # noqa
                 elif end == '..':
-                    end = self._data[self._coverage_properties['time_axis_label']].max().values
+                    end = self._data[self._coverage_properties['time_axis_label']].max().values  # noqa
                 begin = np.datetime64(begin)
                 end = np.datetime64(end)
                 LOGGER.debug(f'begin = {begin} and end = {end}')
                 if begin < end:
-                    query_params[self._coverage_properties['time_axis_label']] = slice(begin, end)
+                    query_params[self._coverage_properties['time_axis_label']] = slice(begin, end)  # noqa
                 else:
                     LOGGER.debug('Reversing slicing from high to low')
-                    query_params[self._coverage_properties['time_axis_label']] = slice(end, begin)
+                    query_params[self._coverage_properties['time_axis_label']] = slice(end, begin)  # noqa
             else:
                 query_params[self._coverage_properties['time_axis_label']] = datetime_  # noqa
 
@@ -137,17 +137,17 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 data = self._data[[*select_properties]]
             else:
                 data = self._data
-            if (datetime_ is not None and 
-                isinstance(query_params[self._coverage_properties['time_axis_label']], slice)):
+            if (datetime_ is not None and
+                isinstance(query_params[self._coverage_properties['time_axis_label']], slice)):  # noqa
                 # separate query into spatial and temporal components
                 LOGGER.debug('Separating temporal query')
-                time_query = {self._coverage_properties['time_axis_label']: 
-                              query_params[self._coverage_properties['time_axis_label']]}
+                time_query = {self._coverage_properties['time_axis_label']:
+                              query_params[self._coverage_properties['time_axis_label']]}   # noqa
                 remaining_query = {key: val for key,
-                                   val in query_params.items() 
-                                   if key != self._coverage_properties['time_axis_label']}
+                                   val in query_params.items()
+                                   if key != self._coverage_properties['time_axis_label']}  # noqa
                 data = data.sel(time_query).sel(remaining_query, method='nearest')
-            else:   
+            else:
                 data = data.sel(query_params, method='nearest')
         except KeyError:
             raise ProviderNoDataError()

@@ -48,6 +48,7 @@ from pygeoapi.util import read_data
 
 LOGGER = logging.getLogger(__name__)
 
+
 class XarrayProvider(BaseProvider):
     """Xarray Provider"""
 
@@ -73,7 +74,6 @@ class XarrayProvider(BaseProvider):
                     self._storage_options = provider_def['storage_options']
                 except KeyError:
                     raise RuntimeError('storage_options required for s3.')
-                
                 data_to_open = _s3open(self.data, self._storage_options)
                 LOGGER.debug('Completed S3 Open Function')
             else:
@@ -90,7 +90,7 @@ class XarrayProvider(BaseProvider):
                          self._coverage_properties['time_axis_label']]
 
             self.fields = self._coverage_properties['fields']
-            
+
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
@@ -415,12 +415,12 @@ class XarrayProvider(BaseProvider):
             }
 
             cj['parameters'][pm['id']] = parameter
-        
+
         LOGGER.debug('Start filling null')
         data = data.fillna(None)
         data = _convert_float32_to_float64(data)
         LOGGER.debug('Finish filling null values')
-        
+
         try:
             for key in cj['parameters'].keys():
                 LOGGER.debug(f'Starting {key}')

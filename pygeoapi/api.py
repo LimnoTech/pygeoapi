@@ -4038,7 +4038,7 @@ def validate_datetime(resource_def, datetime_=None) -> str:
                     datetime__ > te['end'])
             ])
         LOGGER.debug(f'te: {te}')
-        
+
     if datetime_invalid:
         msg = 'datetime parameter out of range'
         LOGGER.debug(msg)
