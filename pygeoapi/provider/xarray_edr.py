@@ -146,7 +146,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
                 remaining_query = {key: val for key,
                                    val in query_params.items()
                                    if key != self._coverage_properties['time_axis_label']}  # noqa
-                data = data.sel(time_query).sel(remaining_query, method='nearest')
+                data = data.sel(time_query).sel(remaining_query, method='nearest')  # noqa
             else:
                 data = data.sel(query_params, method='nearest')
         except KeyError:
