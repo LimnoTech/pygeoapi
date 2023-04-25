@@ -37,7 +37,6 @@ import zipfile
 
 import xarray
 import s3fs
-import fsspec
 import numpy as np
 
 from pygeoapi.provider.base import (BaseProvider,
@@ -83,7 +82,7 @@ class XarrayProvider(BaseProvider):
             LOGGER.debug('About to open data...')
             self._data = open_func(data_to_open)
             LOGGER.debug('Finished opening data...')
-            # self._data = _convert_float32_to_float64(self._data) # considerably slows the process
+
             self._coverage_properties = self._get_coverage_properties()
 
             self.axes = [self._coverage_properties['x_axis_label'],
@@ -418,8 +417,8 @@ class XarrayProvider(BaseProvider):
             cj['parameters'][pm['id']] = parameter
         
         LOGGER.debug('Start filling null')
-        data = data.fillna(None) # move outside of loop.
-        data = _convert_float32_to_float64(data) # move from init to here to reduce time
+        data = data.fillna(None)
+        data = _convert_float32_to_float64(data)
         LOGGER.debug('Finish filling null values')
         
         try:

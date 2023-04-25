@@ -79,7 +79,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         query_params = {}
 
         LOGGER.debug(f'Query parameters: {kwargs}')
-
+        
         LOGGER.debug(f"Query type: {kwargs.get('query_type')}")
 
         wkt = kwargs.get('wkt')
