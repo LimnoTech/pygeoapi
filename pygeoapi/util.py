@@ -648,6 +648,11 @@ def get_supported_crs_list(config: dict, default_crs_list: list) -> list:
     return supported_crs_list
 
 
+def get_crs(in_crs_str):
+    crs = pyproj.CRS.from_string(in_crs_str)
+    return crs
+
+
 def get_crs_from_uri(uri: str) -> pyproj.CRS:
     """
     Get a `pyproj.CRS` instance from a CRS URI.

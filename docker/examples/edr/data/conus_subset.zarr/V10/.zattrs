@@ -1,0 +1,12 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "y",
+        "x"
+    ],
+    "coordinates": "lon lat",
+    "description": "V at 10 M",
+    "grid_mapping": "crs",
+    "long_name": "V-component of wind at 10 meters with respect to model grid",
+    "units": "m s-1"
+}

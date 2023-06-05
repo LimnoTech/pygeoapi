@@ -1,0 +1,13 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "y",
+        "x"
+    ],
+    "coordinates": "lon lat",
+    "description": "water table depth",
+    "grid_mapping": "crs",
+    "long_name": "Water table depth",
+    "number_of_significant_digits": 5,
+    "units": "m"
+}

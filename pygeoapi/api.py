@@ -80,7 +80,7 @@ from pygeoapi.util import (dategetter, RequestedProcessExecutionMode,
                            get_provider_default, get_typed_value, JobStatus,
                            json_serial, render_j2_template, str2bool,
                            TEMPLATES, to_json, get_api_rules, get_base_url,
-                           get_crs_from_uri, get_supported_crs_list,
+                           get_crs_from_uri, get_crs, get_supported_crs_list,
                            CrsTransformSpec, transform_bbox)
 
 from pygeoapi.models.provider.base import TilesMetadataFormat
@@ -876,6 +876,7 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
+        LOGGER.debug("In describe_collections")
 
         if not request.is_valid():
             return self.get_format_exception(request)
@@ -1169,6 +1170,7 @@ class API:
 
             try:
                 edr = get_provider_by_type(v['providers'], 'edr')
+                
             except ProviderTypeError:
                 edr = None
 
@@ -1178,6 +1180,7 @@ class API:
                 try:
                     p = load_plugin('provider', get_provider_by_type(
                         self.config['resources'][dataset]['providers'], 'edr'))
+                    
                     parameters = p.get_fields()
                     if parameters:
                         collection['parameter-names'] = {}
@@ -1363,6 +1366,7 @@ class API:
 
         :returns: tuple of headers, status code, content
         """
+        LOGGER.debug('In get_collection_items')
 
         if not request.is_valid(PLUGINS['formatter'].keys()):
             return self.get_format_exception(request)
@@ -3705,7 +3709,8 @@ class API:
         :param query_type: EDR query type
 
         :returns: tuple of headers, status code, content
-        """
+        """ 
+        LOGGER.debug('In get_collection_edr_query function')
 
         if not request.is_valid(PLUGINS['formatter'].keys()):
             return self.get_format_exception(request)
@@ -3779,6 +3784,10 @@ class API:
         try:
             p = load_plugin('provider', get_provider_by_type(
                 collections[dataset]['providers'], 'edr'))
+            LOGGER.debug(f'p: {p}')
+            provider_def = get_provider_by_type(
+                        self.config['resources'][dataset]['providers'], 'edr')
+            LOGGER.debug(f'provider_def: {provider_def}')
         except ProviderTypeError:
             msg = 'invalid provider type'
             return self.get_exception(
@@ -3813,6 +3822,22 @@ class API:
             return self.get_exception(
                 HTTPStatus.BAD_REQUEST, headers, request.format,
                 'InvalidParameterValue', msg)
+        
+        crs_transform_spec = None
+        LOGGER.debug('Transforming the request')
+        query_crs_uri = request.params.get('crs')
+        try:
+            crs_transform_spec = self._create_crs_transform_spec(
+                provider_def, query_crs_uri,
+            )
+        except (ValueError, CRSError) as err:
+            msg = str(err)
+            return self.get_exception(
+                HTTPStatus.BAD_REQUEST, headers, request.format,
+                'InvalidParameterValue', msg)
+        LOGGER.debug(f'crs_transform_spec: {crs_transform_spec}')
+        self._set_content_crs_header(headers, request.params, query_crs_uri)
+        LOGGER.debug('set_content_crs_header complete.')
 
         query_args = dict(
             query_type=query_type,
@@ -3823,6 +3848,7 @@ class API:
             wkt=wkt,
             z=z,
             bbox=bbox,
+            crs_transform_spec=crs_transform_spec,
             within=within,
             within_units=within_units,
             limit=int(self.config['server']['limit'])
@@ -4077,7 +4103,9 @@ class API:
         :rtype: Union[None, CrsTransformSpec]
         """
         # Get storage/default CRS for Collection.
+        LOGGER.debug(config)
         storage_crs_uri = config.get('storage_crs', DEFAULT_STORAGE_CRS)
+        LOGGER.debug(f'Storage CRS is {storage_crs_uri}')
 
         if not query_crs_uri:
             if storage_crs_uri in DEFAULT_CRS_LIST:
@@ -4096,9 +4124,12 @@ class API:
                 'collection. List of supported CRSs: '
                 f'{", ".join(supported_crs_list)}.'
             )
-        crs_out = get_crs_from_uri(query_crs_uri)
+        # crs_out = get_crs_from_uri(query_crs_uri)
+        crs_out = get_crs(query_crs_uri)
 
-        storage_crs = get_crs_from_uri(storage_crs_uri)
+        # storage_crs = get_crs_from_uri(storage_crs_uri)
+        storage_crs = get_crs(storage_crs_uri)
+
         # Check if the crs specified in query parameter differs from the
         # storage crs.
         if str(storage_crs) != str(crs_out):

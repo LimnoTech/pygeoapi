@@ -1,0 +1,17 @@
+{
+    "GeoTransform": "-2620000 20000 0 -183582.2906 0 -20000 ",
+    "_ARRAY_DIMENSIONS": [
+        "time"
+    ],
+    "false_easting": 0.0,
+    "false_northing": 0.0,
+    "grid_mapping_name": "polar_stereographic",
+    "inverse_flattening": 298.257223563,
+    "latitude_of_projection_origin": 90.0,
+    "long_name": "CRS definition",
+    "longitude_of_prime_meridian": 0.0,
+    "semi_major_axis": 6378137.0,
+    "spatial_ref": "PROJCS[\"unnamed\",GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]],PROJECTION[\"Polar_Stereographic\"],PARAMETER[\"latitude_of_origin\",64],PARAMETER[\"central_meridian\",-152],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"Meter\",1]]",
+    "standard_parallel": 64.0,
+    "straight_vertical_longitude_from_pole": -152.0
+}

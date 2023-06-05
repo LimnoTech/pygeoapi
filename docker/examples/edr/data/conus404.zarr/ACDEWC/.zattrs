@@ -1,0 +1,13 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "y",
+        "x"
+    ],
+    "coordinates": "lon lat",
+    "description": "acccumlated QDEWC",
+    "grid_mapping": "crs",
+    "integration_length": "accumulated over prior 60 minutes",
+    "long_name": "Accumulated canopy dew rate",
+    "units": "mm"
+}

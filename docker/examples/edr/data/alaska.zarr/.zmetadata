@@ -1,0 +1,232 @@
+{
+    "metadata": {
+        ".zattrs": {
+            "Conventions": "CF",
+            "NCO": "\"4.5.4\"",
+            "contact": "pbieniek at alaska.edu",
+            "history": "Tue Aug 25 18:14:40 2020: ncks -4 --cnk_plc=nco --cnk_map=rew --fix_rec_dmn=time -L 1 ET0_1979_ccsm_hist.nc compressed/ET0_1979_ccsm_hist.nc",
+            "publication": "Ziel, R.H.; Bieniek, P.A.; Bhatt, U.S.; Strader, H.; Rupp, T.S.; York, A. A Comparison of Fire Weather Indices with MODIS Fire Days for the Natural Regions of Alaska. Forests 2020, 11, 516.",
+            "source": "Dynamically Downscaled NCAR-CCSM4 Historical and RCP 8.5"
+        },
+        ".zgroup": {
+            "zarr_format": 2
+        },
+        "et0/.zarray": {
+            "chunks": [
+                183,
+                262,
+                262
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": -999.9000244140625,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                4941,
+                262,
+                262
+            ],
+            "zarr_format": 2
+        },
+        "et0/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "y",
+                "x"
+            ],
+            "coordinates": "lat lon",
+            "grid_mapping": "polar_stereographic",
+            "long_name": "Reference Evapotranspiration",
+            "units": "mm"
+        },
+        "lat/.zarray": {
+            "chunks": [
+                262,
+                262
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                262,
+                262
+            ],
+            "zarr_format": 2
+        },
+        "lat/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "y",
+                "x"
+            ],
+            "long_name": "latitude",
+            "units": "degrees_north"
+        },
+        "lon/.zarray": {
+            "chunks": [
+                262,
+                262
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                262,
+                262
+            ],
+            "zarr_format": 2
+        },
+        "lon/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "y",
+                "x"
+            ],
+            "long_name": "longitude",
+            "units": "degrees_east"
+        },
+        "polar_stereographic/.zarray": {
+            "chunks": [
+                4941
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "|S1",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                4941
+            ],
+            "zarr_format": 2
+        },
+        "polar_stereographic/.zattrs": {
+            "GeoTransform": "-2620000 20000 0 -183582.2906 0 -20000 ",
+            "_ARRAY_DIMENSIONS": [
+                "time"
+            ],
+            "false_easting": 0.0,
+            "false_northing": 0.0,
+            "grid_mapping_name": "polar_stereographic",
+            "inverse_flattening": 298.257223563,
+            "latitude_of_projection_origin": 90.0,
+            "long_name": "CRS definition",
+            "longitude_of_prime_meridian": 0.0,
+            "semi_major_axis": 6378137.0,
+            "spatial_ref": "PROJCS[\"unnamed\",GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],AUTHORITY[\"EPSG\",\"4326\"]],PROJECTION[\"Polar_Stereographic\"],PARAMETER[\"latitude_of_origin\",64],PARAMETER[\"central_meridian\",-152],PARAMETER[\"scale_factor\",1],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"Meter\",1]]",
+            "standard_parallel": 64.0,
+            "straight_vertical_longitude_from_pole": -152.0
+        },
+        "time/.zarray": {
+            "chunks": [
+                4941
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<i4",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                4941
+            ],
+            "zarr_format": 2
+        },
+        "time/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time"
+            ],
+            "calendar": "proleptic_gregorian",
+            "long_name": "time",
+            "units": "days since 1979-04-01"
+        },
+        "x/.zarray": {
+            "chunks": [
+                262
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                262
+            ],
+            "zarr_format": 2
+        },
+        "x/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "x"
+            ],
+            "long_name": "x coordinate of projection",
+            "standard_name": "projection_x_coordinate",
+            "units": "m"
+        },
+        "y/.zarray": {
+            "chunks": [
+                262
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                262
+            ],
+            "zarr_format": 2
+        },
+        "y/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "y"
+            ],
+            "long_name": "y coordinate of projection",
+            "standard_name": "projection_y_coordinate",
+            "units": "m"
+        }
+    },
+    "zarr_consolidated_format": 1
+}

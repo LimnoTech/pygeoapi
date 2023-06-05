@@ -1,0 +1,10 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "y",
+        "x"
+    ],
+    "description": "LATITUDE, SOUTH IS NEGATIVE",
+    "long_name": "Latitude, south is negative",
+    "standard_name": "latitude",
+    "units": "degree_north"
+}

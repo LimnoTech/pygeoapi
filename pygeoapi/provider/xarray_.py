@@ -41,7 +41,8 @@ from pygeoapi.provider.base import (BaseProvider,
                                     ProviderConnectionError,
                                     ProviderNoDataError,
                                     ProviderQueryError)
-from pygeoapi.util import read_data
+from pygeoapi.util import read_data, crs_transform
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -188,6 +189,7 @@ class XarrayProvider(BaseProvider):
 
         return rangetype
 
+    @crs_transform
     def query(self, properties=[], subsets={}, bbox=[], bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):
         """

@@ -1,0 +1,11 @@
+{
+    "_ARRAY_DIMENSIONS": [
+        "time",
+        "y",
+        "x"
+    ],
+    "coordinates": "lat lon",
+    "grid_mapping": "polar_stereographic",
+    "long_name": "Reference Evapotranspiration",
+    "units": "mm"
+}

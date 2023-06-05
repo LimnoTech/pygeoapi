@@ -1,0 +1,8 @@
+{
+    "Conventions": "CF",
+    "NCO": "\"4.5.4\"",
+    "contact": "pbieniek at alaska.edu",
+    "history": "Tue Aug 25 18:14:40 2020: ncks -4 --cnk_plc=nco --cnk_map=rew --fix_rec_dmn=time -L 1 ET0_1979_ccsm_hist.nc compressed/ET0_1979_ccsm_hist.nc",
+    "publication": "Ziel, R.H.; Bieniek, P.A.; Bhatt, U.S.; Strader, H.; Rupp, T.S.; York, A. A Comparison of Fire Weather Indices with MODIS Fire Days for the Natural Regions of Alaska. Forests 2020, 11, 516.",
+    "source": "Dynamically Downscaled NCAR-CCSM4 Historical and RCP 8.5"
+}

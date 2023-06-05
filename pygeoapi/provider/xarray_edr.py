@@ -30,10 +30,13 @@
 import logging
 
 import numpy as np
+import pyproj
+from shapely.ops import transform
 
 from pygeoapi.provider.base import ProviderNoDataError, ProviderQueryError
 from pygeoapi.provider.base_edr import BaseEDRProvider
 from pygeoapi.provider.xarray_ import _to_datetime_string, XarrayProvider
+from pygeoapi.util import crs_transform
 
 LOGGER = logging.getLogger(__name__)
 
@@ -61,7 +64,7 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         """
 
         return self.get_coverage_rangetype()
-
+    
     @BaseEDRProvider.register()
     def position(self, **kwargs):
         """
@@ -84,6 +87,16 @@ class XarrayEDRProvider(BaseEDRProvider, XarrayProvider):
         LOGGER.debug(f"Query type: {kwargs.get('query_type')}")
 
         wkt = kwargs.get('wkt')
+        crs_transform_spec = kwargs.get('crs_transform_spec')
+
+        # transform
+        if crs_transform_spec is not None and wkt is not None:
+            t = pyproj.Transformer.from_crs(
+                crs_transform_spec.target_crs_wkt, 
+                crs_transform_spec.source_crs_wkt,
+                )
+            wkt = transform(t.transform, wkt)
+
         if wkt is not None:
             LOGGER.debug('Processing WKT')
             LOGGER.debug(f'Geometry type: {wkt.type}')

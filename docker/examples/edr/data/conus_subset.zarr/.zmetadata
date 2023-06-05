@@ -1,0 +1,358 @@
+{
+    "metadata": {
+        ".zattrs": {
+            "AER_ANGEXP_OPT": 1,
+            "AER_ANGEXP_VAL": 1.2999999523162842,
+            "AER_AOD550_OPT": 1,
+            "AER_AOD550_VAL": 0.11999999731779099,
+            "AER_ASY_OPT": 1,
+            "AER_ASY_VAL": 0.8999999761581421,
+            "AER_OPT": 1,
+            "AER_SSA_OPT": 1,
+            "AER_SSA_VAL": 0.8500000238418579,
+            "AER_TYPE": 1,
+            "BLDT": 0.0,
+            "BL_PBL_PHYSICS": 1,
+            "BOTTOM-TOP_GRID_DIMENSION": 51,
+            "BOTTOM-TOP_PATCH_END_STAG": 51,
+            "BOTTOM-TOP_PATCH_END_UNSTAG": 50,
+            "BOTTOM-TOP_PATCH_START_STAG": 1,
+            "BOTTOM-TOP_PATCH_START_UNSTAG": 1,
+            "BUCKET_J": 1000000000.0,
+            "BUCKET_MM": 100.0,
+            "CEN_LAT": 39.100006103515625,
+            "CEN_LON": -97.89999389648438,
+            "CUDT": 5.0,
+            "CU_PHYSICS": 0,
+            "Contacts": "CHANGHAI LIU (chliu@ucar.edu), KYOKO IKEDA (kyoko@ucar.edu)",
+            "DAMPCOEF": 0.20000000298023224,
+            "DAMP_OPT": 3,
+            "DFI_OPT": 0,
+            "DIFF_6TH_FACTOR": 0.11999999731779099,
+            "DIFF_6TH_OPT": 0,
+            "DIFF_OPT": 2,
+            "DT": 20.0,
+            "DTRAMP_MIN": 60.0,
+            "DVEG": 9,
+            "DX": 4000.0,
+            "DY": 4000.0,
+            "Division": "NCAR/RAL/HAP",
+            "ETAC": 0.0,
+            "FEEDBACK": 1,
+            "FGDT": 2.0,
+            "FileGenerated": "20210204",
+            "GFDDA_END_H": 999999,
+            "GFDDA_INTERVAL_M": 180,
+            "GMT": 0.0,
+            "GPH": 4.999999873689376e-05,
+            "GRAV_SETTLING": 0,
+            "GRIDTYPE": "C",
+            "GRID_FDDA": 2,
+            "GRID_ID": 1,
+            "GRID_SFDDA": 0,
+            "GT": 4.999999873689376e-05,
+            "GUV": 4.999999873689376e-05,
+            "GWD_OPT": 0,
+            "HYBRID_OPT": -1,
+            "HYPSOMETRIC_OPT": 2,
+            "ICLOUD": 1,
+            "ICLOUD_CU": 0,
+            "IF_RAMPING": 1,
+            "ISFFLX": 1,
+            "ISFTCFLX": 0,
+            "ISHALLOW": 0,
+            "ISICE": 15,
+            "ISLAKE": 21,
+            "ISOILWATER": 14,
+            "ISURBAN": 13,
+            "ISWATER": 17,
+            "I_PARENT_START": 1,
+            "JULDAY": 274,
+            "JULYR": 1979,
+            "J_PARENT_START": 1,
+            "KHDIF": 0.0,
+            "KM_OPT": 4,
+            "KVDIF": 0.0,
+            "MAP_PROJ": 1,
+            "MAP_PROJ_CHAR": "Lambert Conformal",
+            "MFSHCONV": 0,
+            "MMINLU": "MODIFIED_IGBP_MODIS_NOAH",
+            "MOAD_CEN_LAT": 39.100006103515625,
+            "MOIST_ADV_OPT": 1,
+            "MP_PHYSICS": 8,
+            "NCO": "netCDF Operators version 4.9.5 (Homepage = http://nco.sf.net, Code = http://github.com/nco/nco)",
+            "NUM_LAND_CAT": 21,
+            "OBS_NUDGE_OPT": 0,
+            "OPT_ALB": 2,
+            "OPT_BTR": 2,
+            "OPT_CRS": 1,
+            "OPT_FRZ": 1,
+            "OPT_GLA": 1,
+            "OPT_INF": 1,
+            "OPT_RAD": 3,
+            "OPT_RSF": 1,
+            "OPT_RUN": 5,
+            "OPT_SFC": 1,
+            "OPT_SNF": 4,
+            "OPT_STC": 3,
+            "OPT_TBOT": 1,
+            "PARENT_GRID_RATIO": 1,
+            "PARENT_ID": 0,
+            "POLE_LAT": 90.0,
+            "POLE_LON": 0.0,
+            "PREC_ACC_DT": 60.0,
+            "Project": "USGS CONUS404",
+            "RADT": 5.0,
+            "RA_LW_PHYSICS": 4,
+            "RA_SW_PHYSICS": 4,
+            "SCALAR_ADV_OPT": 1,
+            "SCALAR_PBLMIX": 0,
+            "SF_LAKE_PHYSICS": 0,
+            "SF_OCEAN_PHYSICS": 0,
+            "SF_SFCLAY_PHYSICS": 1,
+            "SF_SURFACE_PHYSICS": 4,
+            "SF_URBAN_PHYSICS": 0,
+            "SGFDDA_END_H": 0,
+            "SGFDDA_INTERVAL_M": 0,
+            "SHCU_PHYSICS": 0,
+            "SIMULATION_INITIALIZATION_TYPE": "REAL-DATA CASE",
+            "SIMULATION_START_DATE": "1979-10-01_00:00:00",
+            "SKEBS_ON": 0,
+            "SMOOTH_OPTION": 2,
+            "SOUTH-NORTH_GRID_DIMENSION": 1016,
+            "SOUTH-NORTH_PATCH_END_STAG": 1016,
+            "SOUTH-NORTH_PATCH_END_UNSTAG": 1015,
+            "SOUTH-NORTH_PATCH_START_STAG": 1,
+            "SOUTH-NORTH_PATCH_START_UNSTAG": 1,
+            "SPEC_BDY_FINAL_MU": 1,
+            "SST_UPDATE": 1,
+            "STAND_LON": -97.9000015258789,
+            "START_DATE": "1979-10-01_00:00:00",
+            "SURFACE_INPUT_SOURCE": 1,
+            "SWINT_OPT": 0,
+            "SWRAD_SCAT": 1.0,
+            "Source_Code": "make_conusii_2d.csh",
+            "TITLE": " OUTPUT FROM WRF V3.9.1.1 MODEL",
+            "TKE_ADV_OPT": 1,
+            "TOPO_WIND": 1,
+            "TRACER_PBLMIX": 1,
+            "TRUELAT1": 30.0,
+            "TRUELAT2": 50.0,
+            "USE_Q_DIABATIC": 0,
+            "USE_THETA_M": 0,
+            "WEST-EAST_GRID_DIMENSION": 1368,
+            "WEST-EAST_PATCH_END_STAG": 1368,
+            "WEST-EAST_PATCH_END_UNSTAG": 1367,
+            "WEST-EAST_PATCH_START_STAG": 1,
+            "WEST-EAST_PATCH_START_UNSTAG": 1,
+            "W_DAMPING": 1,
+            "YSU_TOPDOWN_PBLMIX": 0,
+            "history": "Tue Mar 29 16:35:22 2022: ncrcat -A -vW /glade/scratch/kyoko/USGS/conus404_production_outputs/GHT/WY1980/CONUS404_W_d01_1979-10-01_00:00:00.nc /glade/scratch/kyoko/USGS/conus404_production_outputs/OUTPUT/WY1980/wrf2d_d01_1979-10-01_00:00:00\nTue Mar 29 16:35:21 2022: ncrcat -A -vZ /glade/scratch/kyoko/USGS/conus404_production_outputs/GHT/WY1980/CONUS404_Z_d01_1979-10-01_00:00:00.nc /glade/scratch/kyoko/USGS/conus404_production_outputs/OUTPUT/WY1980/wrf2d_d01_1979-10-01_00:00:00",
+            "history_of_appended_files": "Tue Mar 29 16:35:22 2022: Appended file /glade/scratch/kyoko/USGS/conus404_production_outputs/GHT/WY1980/CONUS404_W_d01_1979-10-01_00:00:00.nc had no \"history\" attribute\nTue Mar 29 16:35:21 2022: Appended file /glade/scratch/kyoko/USGS/conus404_production_outputs/GHT/WY1980/CONUS404_Z_d01_1979-10-01_00:00:00.nc had no \"history\" attribute\n"
+        },
+        ".zgroup": {
+            "zarr_format": 2
+        },
+        "V10/.zarray": {
+            "chunks": [
+                144,
+                175,
+                175
+            ],
+            "compressor": {
+                "id": "zstd",
+                "level": 9
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                24,
+                15,
+                25
+            ],
+            "zarr_format": 2
+        },
+        "V10/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "y",
+                "x"
+            ],
+            "coordinates": "lon lat",
+            "description": "V at 10 M",
+            "grid_mapping": "crs",
+            "long_name": "V-component of wind at 10 meters with respect to model grid",
+            "units": "m s-1"
+        },
+        "ZWT/.zarray": {
+            "chunks": [
+                144,
+                175,
+                175
+            ],
+            "compressor": {
+                "id": "zstd",
+                "level": 9
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                24,
+                15,
+                25
+            ],
+            "zarr_format": 2
+        },
+        "ZWT/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time",
+                "y",
+                "x"
+            ],
+            "coordinates": "lon lat",
+            "description": "water table depth",
+            "grid_mapping": "crs",
+            "long_name": "Water table depth",
+            "number_of_significant_digits": 5,
+            "units": "m"
+        },
+        "lat/.zarray": {
+            "chunks": [
+                175,
+                175
+            ],
+            "compressor": {
+                "id": "zstd",
+                "level": 9
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                15,
+                25
+            ],
+            "zarr_format": 2
+        },
+        "lat/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "y",
+                "x"
+            ],
+            "description": "LATITUDE, SOUTH IS NEGATIVE",
+            "long_name": "Latitude, south is negative",
+            "standard_name": "latitude",
+            "units": "degree_north"
+        },
+        "lon/.zarray": {
+            "chunks": [
+                175,
+                175
+            ],
+            "compressor": {
+                "id": "zstd",
+                "level": 9
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                15,
+                25
+            ],
+            "zarr_format": 2
+        },
+        "lon/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "y",
+                "x"
+            ],
+            "description": "LONGITUDE, WEST IS NEGATIVE",
+            "long_name": "Longitude, west is negative",
+            "standard_name": "longitude",
+            "units": "degree_east"
+        },
+        "time/.zarray": {
+            "chunks": [
+                46008
+            ],
+            "compressor": {
+                "id": "zstd",
+                "level": 9
+            },
+            "dtype": "<i8",
+            "fill_value": null,
+            "filters": null,
+            "order": "C",
+            "shape": [
+                24
+            ],
+            "zarr_format": 2
+        },
+        "time/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "time"
+            ],
+            "calendar": "proleptic_gregorian",
+            "standard_name": "time",
+            "units": "hours since 1979-10-01"
+        },
+        "x/.zarray": {
+            "chunks": [
+                175
+            ],
+            "compressor": {
+                "id": "zstd",
+                "level": 9
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                25
+            ],
+            "zarr_format": 2
+        },
+        "x/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "x"
+            ],
+            "long_name": "x coordinate of projection",
+            "standard_name": "projection_x_coordinate",
+            "units": "m"
+        },
+        "y/.zarray": {
+            "chunks": [
+                175
+            ],
+            "compressor": {
+                "id": "zstd",
+                "level": 9
+            },
+            "dtype": "<f8",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                15
+            ],
+            "zarr_format": 2
+        },
+        "y/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "y"
+            ],
+            "long_name": "y coordinate of projection",
+            "standard_name": "projection_y_coordinate",
+            "units": "m"
+        }
+    },
+    "zarr_consolidated_format": 1
+}
