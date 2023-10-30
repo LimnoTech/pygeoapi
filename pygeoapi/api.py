@@ -56,7 +56,7 @@ from pygeofilter.parsers.ecql import parse as parse_ecql_text
 from pygeofilter.parsers.cql_json import parse as parse_cql_json
 from pyproj.exceptions import CRSError
 import pytz
-from shapely.errors import WKTReadingError
+from shapely.errors import ShapelyError
 from shapely.wkt import loads as shapely_loads
 
 from pygeoapi import __version__, l10n
@@ -3790,7 +3790,7 @@ class API:
         if wkt:
             try:
                 wkt = shapely_loads(wkt)
-            except WKTReadingError:
+            except ShapelyError:
                 msg = 'invalid coords parameter'
                 return self.get_exception(
                     HTTPStatus.BAD_REQUEST, headers, request.format,
