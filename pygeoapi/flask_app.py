@@ -196,12 +196,9 @@ def get_tilematrix_set(tileMatrixSetId=None):
     OGC API TileMatrixSet endpoint
 
     :param tileMatrixSetId: identifier of tile matrix set
-
     :returns: HTTP response
     """
-
-    return execute_from_flask(tiles_api.tilematrixset, request,
-                              tileMatrixSetId)
+    return get_response(api_.tilematrixset(request, tileMatrixSetId))
 
 
 @BLUEPRINT.route('/TileMatrixSets')
@@ -211,8 +208,7 @@ def get_tilematrix_sets():
 
     :returns: HTTP response
     """
-
-    return execute_from_flask(tiles_api.tilematrixsets, request)
+    return get_response(api_.tilematrixsets(request))
 
 
 @BLUEPRINT.route('/collections')

@@ -164,7 +164,7 @@ async def conformance(request: Request):
 
     :returns: Starlette HTTP Response
     """
-    return await get_response(api_.conformance, request)
+    return get_response(api_.conformance(request))
 
 
 async def get_tilematrix_set(request: Request, tileMatrixSetId=None):
@@ -177,9 +177,7 @@ async def get_tilematrix_set(request: Request, tileMatrixSetId=None):
     if 'tileMatrixSetId' in request.path_params:
         tileMatrixSetId = request.path_params['tileMatrixSetId']
 
-    return await execute_from_starlette(
-        tiles_api.tilematrixset, request, tileMatrixSetId,
-    )
+    return get_response(api_.tilematrixset(request, tileMatrixSetId))
 
 
 async def get_tilematrix_sets(request: Request):
@@ -188,23 +186,7 @@ async def get_tilematrix_sets(request: Request):
 
     :returns: HTTP response
     """
-    return await execute_from_starlette(tiles_api.tilematrixsets, request)
-
-
-async def collection_schema(request: Request, collection_id=None):
-    """
-    OGC API collections schema endpoint
-
-    :param request: Starlette Request instance
-    :param collection_id: collection identifier
-
-    :returns: Starlette HTTP Response
-    """
-    if 'collection_id' in request.path_params:
-        collection_id = request.path_params['collection_id']
-
-    return await get_response(api_.get_collection_schema, request,
-                              collection_id)
+    return get_response(api_.tilematrixsets(request))
 
 
 async def collection_queryables(request: Request, collection_id=None):
@@ -635,7 +617,6 @@ api_routes = [
     Route('/conformance', conformance),
     Route('/TileMatrixSets/{tileMatrixSetId}', get_tilematrix_set),
     Route('/TileMatrixSets', get_tilematrix_sets),
-    Route('/collections/{collection_id:path}/schema', collection_schema),
     Route('/collections/{collection_id:path}/queryables', collection_queryables),  # noqa
     Route('/collections/{collection_id:path}/tiles', get_collection_tiles),
     Route('/collections/{collection_id:path}/tiles/{tileMatrixSetId}', get_collection_tiles_metadata),  # noqa
