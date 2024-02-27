@@ -234,7 +234,6 @@ def collection_schema(collection_id):
 
     :returns: HTTP response
     """
-
     return get_response(api_.get_collection_schema(request, collection_id))
 
 
@@ -315,9 +314,7 @@ def collection_coverage(collection_id):
 
     :returns: HTTP response
     """
-
-    return execute_from_flask(coverages_api.get_collection_coverage, request,
-                              collection_id)
+    return get_response(api_.get_collection_coverage(request, collection_id))
 
 
 @BLUEPRINT.route('/collections/<path:collection_id>/tiles')

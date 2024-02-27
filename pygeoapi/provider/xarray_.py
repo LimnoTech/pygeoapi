@@ -99,29 +99,28 @@ class XarrayProvider(BaseProvider):
 
             self.axes = self._coverage_properties['axes']
 
-            self.get_fields()
+            self.fields = self.get_fields()
         except Exception as err:
             LOGGER.warning(err)
             raise ProviderConnectionError(err)
 
     def get_fields(self):
-        if not self._fields:
-            for key, value in self._data.variables.items():
-                if key not in self._data.coords:
-                    LOGGER.debug('Adding variable')
-                    dtype = value.dtype
-                    if dtype.name.startswith('float'):
-                        dtype = 'number'
-                    elif dtype.name.startswith('int'):
-                        dtype = 'integer'
+        fields = {}
 
-                    self._fields[key] = {
-                        'type': dtype,
-                        'title': value.attrs.get('long_name'),
-                        'x-ogc-unit': value.attrs.get('units')
-                    }
+        for key, value in self._data.variables.items():
+            if len(value.shape) >= 3:
+                LOGGER.debug('Adding variable')
+                dtype = value.dtype
+                if dtype.name.startswith('float'):
+                    dtype = 'number'
 
-        return self._fields
+                fields[key] = {
+                    'type': dtype,
+                    'title': value.attrs['long_name'],
+                    'x-ogc-unit': value.attrs.get('units')
+                }
+
+        return fields
 
     def query(self, properties=[], subsets={}, bbox=[], bbox_crs=4326,
               datetime_=None, format_='json', **kwargs):
@@ -274,7 +273,7 @@ class XarrayProvider(BaseProvider):
 
         :param metadata: coverage metadata
         :param data: rasterio DatasetReader object
-        :param fields: fields
+        :param fields: fields dict
 
         :returns: dict of CoverageJSON representation
         """
@@ -330,15 +329,7 @@ class XarrayProvider(BaseProvider):
             'ranges': {}
         }
 
-        if self.time_field is not None:
-            mint, maxt = metadata['time']
-            cj['domain']['axes'][self.time_field] = {
-                'start': mint,
-                'stop': maxt,
-                'num': metadata['time_steps'],
-            }
-
-        for key, value in selected_fields.items():
+        for key, value in self.fields.items():
             parameter = {
                 'type': 'Parameter',
                 'description': value['title'],
@@ -358,7 +349,7 @@ class XarrayProvider(BaseProvider):
         data = data.fillna(None)
 
         try:
-            for key, value in selected_fields.items():
+            for key, value in self.fields.items():
                 cj['ranges'][key] = {
                     'type': 'NdArray',
                     'dataType': value['type'],
@@ -471,9 +462,6 @@ class XarrayProvider(BaseProvider):
             properties['x_axis_label'],
             properties['y_axis_label']
         ]
-
-        if self.time_field is not None:
-            properties['axes'].append(properties['time_axis_label'])
 
         return properties
 

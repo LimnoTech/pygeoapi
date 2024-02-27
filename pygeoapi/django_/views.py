@@ -287,8 +287,8 @@ def collection_coverage(request: HttpRequest,
     :returns: Django HTTP response
     """
 
-    response_ = execute_from_django(
-        coverages_api.get_collection_coverage, request, collection_id
+    response_ = _feed_response(
+        request, 'get_collection_coverage', collection_id
     )
     response = _to_django_response(*response_)
 
