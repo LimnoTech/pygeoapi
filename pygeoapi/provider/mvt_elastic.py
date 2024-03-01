@@ -34,7 +34,7 @@ from urllib.parse import urlparse
 from pygeoapi.provider.base_mvt import BaseMVTProvider
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.models.provider.base import (
-    TileSetMetadata, LinkType)
+    TileSetMetadata, TileMatrixSetEnum, LinkType)
 from pygeoapi.util import is_url, url_join
 
 LOGGER = logging.getLogger(__name__)
@@ -116,6 +116,13 @@ class MVTElasticProvider(BaseMVTProvider):
         LOGGER.debug(layer)
         LOGGER.debug('Removing leading "/"')
         return layer[1:]
+
+    def get_tiling_schemes(self):
+
+        "Only WebMercatorQuad tiling scheme is supported in elastic"
+        return [
+                TileMatrixSetEnum.WEBMERCATORQUAD.value
+            ]
 
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           dirpath=None, tile_type=None):
