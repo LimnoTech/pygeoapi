@@ -1,8 +1,11 @@
 # =================================================================
 #
-# Authors: Joana Simoes <jo@byteroad.net>
+# Authors: Francesco Bartoli <xbartolone@gmail.com>
+# Authors: Tom Kralidis <tomkralidis@gmail.com>
+# Authors: Simon Seyock <simonseyock@gmail.com>
 #
-# Copyright (c) 2023 Joana Simoes
+# Copyright (c) 2020 Francesco Bartoli
+# Copyright (c) 2023 Tom Kralidis
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -28,61 +31,41 @@
 # =================================================================
 
 import logging
-import requests
-from urllib.parse import urlparse
 
-from pygeoapi.provider.base_mvt import BaseMVTProvider
+import requests
+from urllib.parse import urlparse, urlencode
+
+from pygeoapi.provider.tile import (
+    BaseTileProvider)
 from pygeoapi.provider.base import ProviderConnectionError
 from pygeoapi.models.provider.base import (
-    TileSetMetadata, LinkType)
+    TileMatrixSetEnum, TilesMetadataFormat, TileSetMetadata, LinkType)
 from pygeoapi.util import is_url, url_join
 
 LOGGER = logging.getLogger(__name__)
 
 
-class MVTElasticProvider(BaseMVTProvider):
-    """MVT Elastic Provider
-    Provider for serving tiles rendered with the Elasticsearch
-    Vector Tile API
-    https://www.elastic.co/guide/en/elasticsearch/reference/current/search-vector-tile-api.html
-    As of 12/23, elastic does not provide any tileset metadata.
-    """
+class WMTSFacadeProvider(BaseTileProvider):
+    """WMTS Provider"""
 
-    def __init__(self, BaseMVTProvider):
+    def __init__(self, provider_def):
         """
         Initialize object
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.MVT.MVTElasticProvider
+        :returns: pygeoapi.provider.WMTSFacadeProvider
         """
 
-        super().__init__(BaseMVTProvider)
+        if provider_def['format']['name'] not in ['png', 'jpeg']:
+            raise RuntimeError("WMTS format has to be 'png' or 'jpeg'")
 
-        if not is_url(self.data):
-            msg = 'Wrong input format for Elasticsearch MVT'
-            LOGGER.error(msg)
-            raise ProviderConnectionError(msg)
+        super().__init__(provider_def)
 
-        url = urlparse(self.data)
-        baseurl = f'{url.scheme}://{url.netloc}'
-        param_type = '?f=mvt'
-        layer = f'/{self.get_layer()}'
-
-        LOGGER.debug('Extracting layer name from URL')
-        LOGGER.debug(f'Layer: {layer}')
-
-        tilepath = f'{layer}/tiles'
-        servicepath = f'{tilepath}/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}{param_type}'  # noqa
-
-        self._service_url = url_join(baseurl, servicepath)
-
-        self._service_metadata_url = url_join(
-            self.service_url.split('{tileMatrix}/{tileRow}/{tileCol}')[0],
-            'metadata')
+        self.tile_type = 'raster'
 
     def __repr__(self):
-        return f'<MVTElasticProvider> {self.data}'
+        return f'<WMTSFacadeProvider> {self.data}'
 
     @property
     def service_url(self):
@@ -92,35 +75,23 @@ class MVTElasticProvider(BaseMVTProvider):
     def service_metadata_url(self):
         return self._service_metadata_url
 
-    def get_layer(self):
-        """
-        Extracts layer name from url
+    def get_tiling_schemes(self):
 
-        :returns: layer name
-        """
+        tile_matrix_set_links_list = [
+            TileMatrixSetEnum.WORLDCRS84QUAD.value,
+            TileMatrixSetEnum.WEBMERCATORQUAD.value
+        ]
+        tile_matrix_set_links = [
+            item for item in tile_matrix_set_links_list
+            if item.tileMatrixSet == self.options['scheme']
+        ]
 
-        if not is_url(self.data):
-            msg = 'Wrong input format for Elasticsearch MVT'
-            LOGGER.error(msg)
-            raise ProviderConnectionError(msg)
-
-        url = urlparse(self.data)
-
-        if ('/{z}/{x}/{y}' not in url.path):
-            msg = 'Wrong input format for Elasticsearch MVT'
-            LOGGER.error(msg)
-            raise ProviderConnectionError(msg)
-
-        layer = url.path.split('/{z}/{x}/{y}')[0]
-
-        LOGGER.debug(layer)
-        LOGGER.debug('Removing leading "/"')
-        return layer[1:]
+        return tile_matrix_set_links
 
     def get_tiles_service(self, baseurl=None, servicepath=None,
                           dirpath=None, tile_type=None):
         """
-        Gets mvt service description
+        Gets service description
 
         :param baseurl: base URL of endpoint
         :param servicepath: base path of URL
@@ -130,54 +101,119 @@ class MVTElasticProvider(BaseMVTProvider):
         :returns: `dict` of item tile service
         """
 
-        super().get_tiles_service(baseurl, servicepath,
-                                  dirpath, tile_type)
+        url = urlparse(self.data)
+        baseurl = baseurl or f'{url.scheme}://{url.netloc}'
+        tile_type = self.format_type
+        basepath = url.path.split('/{z}/{x}/{y}')[0]
+        servicepath = servicepath or f'{basepath}/tiles/{{tileMatrixSetId}}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={tile_type}'  # noqa
 
-        self._service_url = servicepath
-        return self.get_tms_links()
+        if servicepath.startswith(baseurl):
+            self._service_url = servicepath
+        else:
+            self._service_url = url_join(baseurl, servicepath)
+
+        tile_matrix_set = self.service_url.split(
+            '/{tileMatrix}/{tileRow}/{tileCol}')[0]
+        self._service_metadata_url = url_join(tile_matrix_set, 'metadata')
+
+        links = {
+            'links': [
+                {
+                    'type': self.mimetype,
+                    'rel': 'item',
+                    'title': 'This collection as image tiles',
+                    'href': self.service_url
+                },
+                {
+                    'type': 'application/json',
+                    'rel': 'describedby',
+                    'title': 'Collection metadata in TileJSON format',
+                    'href': f'{self.service_metadata_url}?f=json'
+                }
+            ]
+        }
+        return links
 
     def get_tiles(self, layer=None, tileset=None,
                   z=None, y=None, x=None, format_=None):
         """
         Gets tile
 
-        :param layer: mvt tile layer
-        :param tileset: mvt tileset
+        :param layer: The layer name
+        :param tileset: The tileset name
         :param z: z index
         :param y: y index
         :param x: x index
         :param format_: tile format
 
-        :returns: an encoded mvt tile
+        :returns: an image tile
         """
-        if format_ == 'mvt':
-            format_ = self.format_type
-
         if is_url(self.data):
-            url = urlparse(self.data)
-            base_url = f'{url.scheme}://{url.netloc}'
+            params = {
+                'service': 'WMTS',
+                'request': 'GetTile',
+                'version': '1.0.0',
+                'format': self.mimetype,
+                'layer': self.options['wmts_layer'],
+                'tileMatrixSet': self.options['wmts_tile_matrix_set'],
+                'tileMatrix': z,
+                'tileRow': y,
+                'tileCol': x,
+                'style': ''
+            }
 
-            if url.query:
-                url_query = f'?{url.query}'
+            if '?' in self.data:
+                request_url = '&'.join([self.data, urlencode(params)])
             else:
-                url_query = ''
+                request_url = '?'.join([self.data, urlencode(params)])
+
+            LOGGER.debug(f'WMTS 1.0.0 request url: {request_url}')
 
             with requests.Session() as session:
-                session.get(base_url)
-                resp = session.get(f'{base_url}/{layer}/{z}/{y}/{x}{url_query}')  # noqa
+                resp = session.get(request_url)
                 resp.raise_for_status()
                 return resp.content
         else:
-            msg = 'Wrong input format for Elasticsearch MVT'
+            msg = f'Wrong data path configuration: {self.data}'
             LOGGER.error(msg)
             raise ProviderConnectionError(msg)
+
+    def get_metadata(self, dataset, server_url, layer=None,
+                     tileset=None, metadata_format=None, title=None,
+                     description=None, keywords=None, **kwargs):
+        """
+        Gets tiles metadata
+
+        :param dataset: dataset name
+        :param server_url: server base url
+        :param layer: mvt tile layer name
+        :param tileset: mvt tileset name
+        :param metadata_format: format for metadata,
+                            enum TilesMetadataFormat
+        :param title: title name
+        :param description: description name
+        :param keywords: keywords list
+
+        :returns: `dict` of JSON metadata
+        """
+
+        if metadata_format.upper() == TilesMetadataFormat.JSON:
+            return self.get_default_metadata(dataset, server_url, layer,
+                                             tileset, title, description,
+                                             keywords, **kwargs)
+        elif metadata_format.upper() == TilesMetadataFormat.HTML:
+            return self.get_html_metadata(dataset, server_url, layer,
+                                          tileset, title, description,
+                                          keywords, **kwargs)
+        else:
+            raise NotImplementedError(f"_{metadata_format.upper()}_ is not supported") # noqa
 
     def get_html_metadata(self, dataset, server_url, layer, tileset,
                           title, description, keywords, **kwargs):
 
         service_url = url_join(
             server_url,
-            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={self.format_type}')  # noqa
         metadata_url = url_join(
             server_url,
             f'collections/{dataset}/tiles/{tileset}/metadata')
@@ -196,7 +232,7 @@ class MVTElasticProvider(BaseMVTProvider):
 
         service_url = url_join(
             server_url,
-            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f=mvt')  # noqa
+            f'collections/{dataset}/tiles/{tileset}/{{tileMatrix}}/{{tileRow}}/{{tileCol}}?f={self.format_type}')  # noqa
 
         content = {}
         tiling_schemes = self.get_tiling_schemes()
@@ -229,10 +265,9 @@ class MVTElasticProvider(BaseMVTProvider):
                                   tileMatrixSetURI=tileMatrixSetURI)
 
         links = []
-        service_url_link_type = "application/vnd.mapbox-vector-tile"
-        service_url_link_title = f'{tileset} vector tiles for {layer}'
+        service_url_link_title = f'{tileset} raster tiles for {dataset}'
         service_url_link = LinkType(href=service_url, rel="item",
-                                    type_=service_url_link_type,
+                                    type_=self.mimetype,
                                     title=service_url_link_title)
 
         links.append(tiling_scheme)
@@ -241,11 +276,3 @@ class MVTElasticProvider(BaseMVTProvider):
         content.links = links
 
         return content.dict(exclude_none=True)
-
-    def get_vendor_metadata(self, dataset, server_url, layer, tileset,
-                            title, description, keywords, **kwargs):
-        """
-        Gets tile metadata in tilejson format
-        """
-        LOGGER.debug("Get tilejson metadata")
-        return ""
