@@ -49,8 +49,14 @@ from starlette.responses import (
 )
 import uvicorn
 
-from pygeoapi.api import API
-from pygeoapi.admin import Admin
+from pygeoapi.api import API, APIRequest, apply_gzip
+import pygeoapi.api.coverages as coverages_api
+import pygeoapi.api.environmental_data_retrieval as edr_api
+import pygeoapi.api.itemtypes as itemtypes_api
+import pygeoapi.api.maps as maps_api
+import pygeoapi.api.processes as processes_api
+import pygeoapi.api.stac as stac_api
+import pygeoapi.api.tiles as tiles_api
 from pygeoapi.openapi import load_openapi_document
 from pygeoapi.config import get_config
 from pygeoapi.util import get_api_rules
@@ -87,7 +93,13 @@ def get_response(result: tuple) -> Union[Response, JSONResponse, HTMLResponse]:
     :returns: A Response instance.
     """
 
-    headers, status, content = result
+    loop = asyncio.get_running_loop()
+    headers, status, content = await loop.run_in_executor(
+        None, call_api_threadsafe, loop, api_call, *args)
+    return _to_response(headers, status, content)
+
+
+def _to_response(headers, status, content):
     if headers['Content-Type'] == 'text/html':
         response = HTMLResponse(content=content, status_code=status)
     else:
@@ -98,6 +110,27 @@ def get_response(result: tuple) -> Union[Response, JSONResponse, HTMLResponse]:
 
     if headers is not None:
         response.headers.update(headers)
+    return response
+
+
+async def execute_from_starlette(api_function, request: Request, *args,
+                                 skip_valid_check=False) -> Response:
+    api_request = await APIRequest.from_starlette(request, api_.locales)
+    content: str | bytes
+    if not skip_valid_check and not api_request.is_valid():
+        headers, status, content = api_.get_format_exception(api_request)
+    else:
+
+        loop = asyncio.get_running_loop()
+        headers, status, content = await loop.run_in_executor(
+            None, call_api_threadsafe, loop, api_function,
+            api_, api_request, *args)
+        # NOTE: that gzip currently doesn't work in starlette
+        #       https://github.com/geopython/pygeoapi/issues/1591
+        content = apply_gzip(headers, content)
+
+    response = _to_response(headers, status, content)
+
     return response
 
 
@@ -144,8 +177,9 @@ async def get_tilematrix_set(request: Request, tileMatrixSetId=None):
     if 'tileMatrixSetId' in request.path_params:
         tileMatrixSetId = request.path_params['tileMatrixSetId']
 
-    return await get_response(
-        api_.tilematrixset, request, tileMatrixSetId)
+    return await execute_from_starlette(
+        tiles_api.tilematrixset, request, tileMatrixSetId,
+    )
 
 
 async def get_tilematrix_sets(request: Request):
@@ -154,7 +188,7 @@ async def get_tilematrix_sets(request: Request):
 
     :returns: HTTP response
     """
-    return await get_response(api_.tilematrixsets, request)
+    return await execute_from_starlette(tiles_api.tilematrixsets, request)
 
 
 async def collection_schema(request: Request, collection_id=None):
@@ -169,8 +203,8 @@ async def collection_schema(request: Request, collection_id=None):
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
-    return await get_response(
-        api_.get_collection_schema, request, collection_id)
+    return await get_response(api_.get_collection_schema, request,
+                              collection_id)
 
 
 async def collection_queryables(request: Request, collection_id=None):
@@ -185,8 +219,9 @@ async def collection_queryables(request: Request, collection_id=None):
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
-    return await get_response(
-        api_.get_collection_queryables, request, collection_id)
+    return await execute_from_starlette(
+        itemtypes_api.get_collection_queryables, request, collection_id,
+    )
 
 
 async def get_collection_tiles(request: Request, collection_id=None):
@@ -200,8 +235,9 @@ async def get_collection_tiles(request: Request, collection_id=None):
     """
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
-    return get_response(api_.get_collection_tiles(
-        request, collection_id))
+
+    return await execute_from_starlette(
+        tiles_api.get_collection_tiles, request, collection_id)
 
 
 async def get_collection_tiles_metadata(request: Request, collection_id=None,
@@ -218,8 +254,11 @@ async def get_collection_tiles_metadata(request: Request, collection_id=None,
         collection_id = request.path_params['collection_id']
     if 'tileMatrixSetId' in request.path_params:
         tileMatrixSetId = request.path_params['tileMatrixSetId']
-    return get_response(api_.get_collection_tiles_metadata(
-        request, collection_id, tileMatrixSetId))
+
+    return await execute_from_starlette(
+        tiles_api.get_collection_tiles_metadata, request,
+        collection_id, tileMatrixSetId, skip_valid_check=True,
+    )
 
 
 async def get_collection_items_tiles(request: Request, collection_id=None,
@@ -247,9 +286,11 @@ async def get_collection_items_tiles(request: Request, collection_id=None,
         tileRow = request.path_params['tileRow']
     if 'tileCol' in request.path_params:
         tileCol = request.path_params['tileCol']
-    return get_response(api_.get_collection_tiles_data(
-        request, collection_id, tileMatrixSetId,
-        tile_matrix, tileRow, tileCol))
+    return await execute_from_starlette(
+        tiles_api.get_collection_tiles_data, request, collection_id,
+        tileMatrixSetId, tile_matrix, tileRow, tileCol,
+        skip_valid_check=True,
+    )
 
 
 async def collection_items(request: Request, collection_id=None, item_id=None):
@@ -269,38 +310,47 @@ async def collection_items(request: Request, collection_id=None, item_id=None):
         item_id = request.path_params['item_id']
     if item_id is None:
         if request.method == 'GET':  # list items
-            return get_response(
-                api_.get_collection_items(
-                    request, collection_id))
+            return await execute_from_starlette(
+                itemtypes_api.get_collection_items, request, collection_id,
+                skip_valid_check=True)
         elif request.method == 'POST':  # filter or manage items
             content_type = request.headers.get('content-type')
             if content_type is not None:
                 if content_type == 'application/geo+json':
-                    return get_response(
-                        api_.manage_collection_item(request, 'create',
-                                                    collection_id))
+                    return await execute_from_starlette(
+                        itemtypes_api.manage_collection_item, request,
+                        'create', collection_id, skip_valid_check=True)
                 else:
-                    return get_response(
-                        api_.post_collection_items(request, collection_id))
+                    return await execute_from_starlette(
+                        itemtypes_api.post_collection_items,
+                        request,
+                        collection_id,
+                        skip_valid_check=True,
+                    )
         elif request.method == 'OPTIONS':
-            return get_response(
-                api_.manage_collection_item(request, 'options', collection_id))
+            return await execute_from_starlette(
+                itemtypes_api.manage_collection_item, request,
+                'options', collection_id, skip_valid_check=True,
+            )
 
     elif request.method == 'DELETE':
-        return get_response(
-            api_.manage_collection_item(request, 'delete',
-                                        collection_id, item_id))
+        return await execute_from_starlette(
+            itemtypes_api.manage_collection_item, request, 'delete',
+            collection_id, item_id, skip_valid_check=True,
+        )
     elif request.method == 'PUT':
-        return get_response(
-            api_.manage_collection_item(request, 'update',
-                                        collection_id, item_id))
+        return await execute_from_starlette(
+            itemtypes_api.manage_collection_item, request, 'update',
+            collection_id, item_id, skip_valid_check=True,
+        )
     elif request.method == 'OPTIONS':
-        return get_response(
-            api_.manage_collection_item(request, 'options',
-                                        collection_id, item_id))
+        return await execute_from_starlette(
+            itemtypes_api.manage_collection_item, request, 'options',
+            collection_id, item_id, skip_valid_check=True,
+        )
     else:
-        return get_response(api_.get_collection_item(
-            request, collection_id, item_id))
+        return await execute_from_starlette(
+            itemtypes_api.get_collection_item, request, collection_id, item_id)
 
 
 async def collection_coverage(request: Request, collection_id=None):
@@ -315,7 +365,8 @@ async def collection_coverage(request: Request, collection_id=None):
     if 'collection_id' in request.path_params:
         collection_id = request.path_params['collection_id']
 
-    return get_response(api_.get_collection_coverage(request, collection_id))
+    return await execute_from_starlette(
+        coverages_api.get_collection_coverage, request, collection_id)
 
 
 async def collection_map(request: Request, collection_id, style_id=None):
@@ -333,8 +384,9 @@ async def collection_map(request: Request, collection_id, style_id=None):
     if 'style_id' in request.path_params:
         style_id = request.path_params['style_id']
 
-    return get_response(api_.get_collection_map(
-        request, collection_id, style_id))
+    return await execute_from_starlette(
+        maps_api.get_collection_map, request, collection_id, style_id
+    )
 
 
 async def get_processes(request: Request, process_id=None):
@@ -349,7 +401,8 @@ async def get_processes(request: Request, process_id=None):
     if 'process_id' in request.path_params:
         process_id = request.path_params['process_id']
 
-    return get_response(api_.describe_processes(request, process_id))
+    return await execute_from_starlette(processes_api.describe_processes,
+                                        request, process_id)
 
 
 async def get_jobs(request: Request, job_id=None):
@@ -366,12 +419,14 @@ async def get_jobs(request: Request, job_id=None):
         job_id = request.path_params['job_id']
 
     if job_id is None:  # list of submit job
-        return get_response(api_.get_jobs(request))
+        return await execute_from_starlette(processes_api.get_jobs, request)
     else:  # get or delete job
         if request.method == 'DELETE':
-            return get_response(api_.delete_job(job_id))
+            return await execute_from_starlette(processes_api.delete_job,
+                                                request, job_id)
         else:  # Return status of a specific job
-            return get_response(api_.get_jobs(request, job_id))
+            return await execute_from_starlette(processes_api.get_jobs,
+                                                request, job_id)
 
 
 async def execute_process_jobs(request: Request, process_id=None):
@@ -387,7 +442,8 @@ async def execute_process_jobs(request: Request, process_id=None):
     if 'process_id' in request.path_params:
         process_id = request.path_params['process_id']
 
-    return get_response(api_.execute_process(request, process_id))
+    return await execute_from_starlette(processes_api.execute_process,
+                                        request, process_id)
 
 
 async def get_job_result(request: Request, job_id=None):
@@ -403,7 +459,8 @@ async def get_job_result(request: Request, job_id=None):
     if 'job_id' in request.path_params:
         job_id = request.path_params['job_id']
 
-    return get_response(api_.get_job_result(request, job_id))
+    return await execute_from_starlette(processes_api.get_job_result,
+                                        request, job_id)
 
 
 async def get_job_result_resource(request: Request,
@@ -423,8 +480,9 @@ async def get_job_result_resource(request: Request,
     if 'resource' in request.path_params:
         resource = request.path_params['resource']
 
-    return get_response(api_.get_job_result_resource(
-        request, job_id, resource))
+    # TODO: this api function currently doesn't exist
+    return await get_response(
+        api_.get_job_result_resource, request, job_id, resource)
 
 
 async def get_collection_edr_query(request: Request, collection_id=None, instance_id=None):  # noqa
@@ -444,8 +502,11 @@ async def get_collection_edr_query(request: Request, collection_id=None, instanc
         instance_id = request.path_params['instance_id']
 
     query_type = request["path"].split('/')[-1]  # noqa
-    return get_response(api_.get_collection_edr_query(request, collection_id,
-                                                      instance_id, query_type))
+    return await execute_from_starlette(
+        edr_api.get_collection_edr_query, request, collection_id,
+        instance_id, query_type,
+        skip_valid_check=True,
+    )
 
 
 async def collections(request: Request, collection_id=None):
@@ -470,7 +531,7 @@ async def stac_catalog_root(request: Request):
 
     :returns: Starlette HTTP response
     """
-    return get_response(api_.get_stac_root(request))
+    return await execute_from_starlette(stac_api.get_stac_root, request)
 
 
 async def stac_catalog_path(request: Request):
@@ -482,7 +543,7 @@ async def stac_catalog_path(request: Request):
     :returns: Starlette HTTP response
     """
     path = request.path_params["path"]
-    return get_response(api_.get_stac_path(request, path))
+    return await execute_from_starlette(stac_api.get_stac_path, request, path)
 
 
 async def admin_config(request: Request):
