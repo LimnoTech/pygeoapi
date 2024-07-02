@@ -125,6 +125,65 @@ class BaseMVTProvider(BaseTileProvider):
 
         raise NotImplementedError()
 
+    def get_html_metadata(self, dataset, server_url, layer, tileset,
+                          title, description, keywords, **kwargs):
+        """
+        Gets tile metadata information in html format
+
+        :param dataset: dataset name
+        :param server_url: server base url
+        :param layer: mvt tile layer name
+        :param tileset: mvt tileset name
+        :param metadata_format: format for metadata,
+                            enum TilesMetadataFormat
+        :param title: title name
+        :param description: description name
+        :param keywords: keywords list
+
+        :returns: `dict` of JSON metadata
+        """
+
+        raise NotImplementedError()
+
+    def get_default_metadata(self, dataset, server_url, layer, tileset,
+                             title, description, keywords, **kwargs):
+        """
+        Gets tile metadata in default Tile Set Metadata format
+
+        :param dataset: dataset name
+        :param server_url: server base url
+        :param layer: mvt tile layer name
+        :param tileset: mvt tileset name
+        :param metadata_format: format for metadata,
+                            enum TilesMetadataFormat
+        :param title: title name
+        :param description: description name
+        :param keywords: keywords list
+
+        :returns: `dict` of JSON metadata
+        """
+        raise NotImplementedError()
+
+    def get_vendor_metadata(self, dataset, server_url, layer, tileset,
+                            title, description, keywords, **kwargs):
+        """
+        Gets tile metadata in Tilejson format
+
+        :param dataset: dataset name
+        :param server_url: server base url
+        :param layer: mvt tile layer name
+        :param tileset: mvt tileset name
+        :param metadata_format: format for metadata,
+                            enum TilesMetadataFormat
+        :param title: title name
+        :param description: description name
+        :param keywords: keywords list
+
+        :returns: `dict` of JSON metadata
+        """
+
+        raise NotImplementedError()
+
     def get_metadata(self, dataset, server_url, layer=None,
                      tileset=None, metadata_format=None, title=None,
                      description=None, keywords=None, **kwargs):

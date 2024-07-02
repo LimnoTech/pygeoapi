@@ -158,8 +158,8 @@ main Django application urls:
    ]
 
 
-This integration can be seen in the provided example Django project. Refer to `examples/django/sample_project/README.md` 
-for the integration of pygeoapi with an already exising Django application.
+This integration can be seen in the provided example Django project. Refer to the `Django example in the pygeoapi-examples repository`_
+for the integration of pygeoapi with an already existing Django application.
 
 Hot-reloading
 ^^^^^^^^^^^^^

@@ -189,6 +189,12 @@ class BaseManager:
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
+        :param requested_outputs: `dict` specify the subset of required
+            outputs - defaults to all outputs.
+            The value of any key may be an object and include the property
+            `transmissionMode` - defaults to `value`.
+            Note: 'optional' is for backward compatibility.
+        :param subscriber: optional `Subscriber` specifying callback URLs
 
         :returns: tuple of None (i.e. initial response payload)
                   and JobStatus.accepted (i.e. initial job status)
@@ -212,6 +218,12 @@ class BaseManager:
         :param p: `pygeoapi.process` object
         :param job_id: job identifier
         :param data_dict: `dict` of data parameters
+        :param requested_outputs: `dict` specify the subset of required
+            outputs - defaults to all outputs.
+            The value of any key may be an object and include the property
+            `transmissionMode` - defaults to `value`.
+            Note: 'optional' is for backward compatibility.
+        :param subscriber: optional `Subscriber` specifying callback URLs
 
         :returns: tuple of MIME type, response payload and status
         """
@@ -280,7 +292,7 @@ class BaseManager:
         except Exception as err:
             # TODO assess correct exception type and description to help users
             # NOTE, the /results endpoint should return the error HTTP status
-            # for jobs that failed, ths specification says that failing jobs
+            # for jobs that failed, the specification says that failing jobs
             # must still be able to be retrieved with their error message
             # intact, and the correct HTTP error status at the /results
             # endpoint, even if the /result endpoint correctly returns the
@@ -323,10 +335,16 @@ class BaseManager:
         :param process_id: process identifier
         :param data_dict: `dict` of data parameters
         :param execution_mode: `str` optionally specifying sync or async
-        processing.
+                               processing.
+        :param requested_outputs: `dict` optionally specify the subset of
+            required outputs - defaults to all outputs.
+            The value of any key may be an object and include the property
+            `transmissionMode` - defaults to `value`.
+            Note: 'optional' is for backward compatibility.
+        :param subscriber: `Subscriber` optionally specifying callback urls
 
-        :raises: UnknownProcessError if the input process_id does not
-                 correspond to a known process
+        :raises UnknownProcessError: if the input process_id does not
+                                     correspond to a known process
         :returns: tuple of job_id, MIME type, response payload, status and
                   optionally additional HTTP headers to include in the final
                   response

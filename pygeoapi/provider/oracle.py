@@ -88,12 +88,28 @@ class DatabaseConnection:
         )
         self.properties = [item.lower() for item in properties]
         self.fields = {}  # Dict of columns. Key is col name, value is type
-        self.conn = None
+        oracle_pool_min = int(os.environ.get('ORACLE_POOL_MIN', 0))
+        oracle_pool_max = int(os.environ.get('ORACLE_POOL_MAX', 0))
+        # Initialize the connection pool if it hasn't been initialized
+        if oracle_pool_min and oracle_pool_max:
+            LOGGER.debug("Found environment variables for session pooling:")
+            LOGGER.debug(f"ORACLE_POOL_MIN: {oracle_pool_min}")
+            LOGGER.debug(f"ORACLE_POOL_MAX: {oracle_pool_max}")
+            with DatabaseConnection.lock:
+                if DatabaseConnection.pool is None:
+                    LOGGER.debug(f"self.conn_dict contains {self.conn_dict}")
+                    DatabaseConnection.pool = DatabaseConnection.create_pool(
+                        self.conn_dict, oracle_pool_min, oracle_pool_max
+                    )
+                    LOGGER.debug(
+                        "Initialized connection pool with "
+                        f"{DatabaseConnection.pool.max} connections"
+                    )
 
-    def __enter__(self):
-        try:
-            if self.conn_dict.get("init_oracle_client", False):
-                oracledb.init_oracle_client()
+    @staticmethod
+    def _make_dsn(conn_dict):
+        if conn_dict.get("init_oracle_client", False):
+            oracledb.init_oracle_client()
 
             # Connect with tnsnames.ora entry and Login with Oracle Wallet
             if self.conn_dict.get("external_auth") == "wallet":
@@ -233,7 +249,7 @@ class DatabaseConnection:
         Returns an array with all column names and data types
         from Oracle table ALL_TAB_COLUMNS.
         Lookup for public and private synonyms.
-        Throws ProviderGenericError when table not exist or accesable.
+        Throws ProviderGenericError when table not exist or accessible.
         """
 
         sql = """
@@ -657,7 +673,7 @@ class OracleProvider(BaseProvider):
             LOGGER.debug(f"target_srid: {target_srid}")
 
             # Build geometry column call
-            #   When a different output CRS is definded, the geometry
+            #   When a different output CRS is defined, the geometry
             #   geometry column would be transformed.
             if skip_geometry:
                 geom = ""
@@ -846,7 +862,7 @@ class OracleProvider(BaseProvider):
             LOGGER.debug(f"target_srid: {target_srid}")
 
             # Build geometry column call
-            #   When a different output CRS is definded, the geometry
+            #   When a different output CRS is defined, the geometry
             #   geometry column would be transformed.
             if source_srid != target_srid:
                 crs_dict = {"target_srid": target_srid}
@@ -974,7 +990,7 @@ class OracleProvider(BaseProvider):
                 if col.lower() in [field.lower() for field in self.fields]
             ]
 
-            # Flter function to get only properties who are
+            # Filter function to get only properties who are
             # in the column list
             def filter_binds(pair):
                 return pair[0].lower() in [
@@ -1073,7 +1089,7 @@ class OracleProvider(BaseProvider):
                 if col.lower() in [field.lower() for field in self.fields]
             ]
 
-            # Flter function to get only properties who are
+            # Filter function to get only properties who are
             # in the column list
             def filter_binds(pair):
                 return pair[0].lower() in [
