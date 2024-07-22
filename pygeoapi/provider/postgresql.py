@@ -110,7 +110,7 @@ class PostgreSQLProvider(BaseProvider):
         self._store_db_parameters(provider_def['data'], options)
         self._engine, self.table_model = self._get_engine_and_table_model()
         LOGGER.debug(f'DB connection: {repr(self._engine.url)}')
-        self.fields = self.get_fields()
+        self.get_fields()
 
     def query(self, offset=0, limit=10, resulttype='results',
               bbox=[], datetime_=None, properties=[], sortby=[],
@@ -214,15 +214,28 @@ class PostgreSQLProvider(BaseProvider):
                     return column_type_map[python_type]
                 except KeyError:
                     LOGGER.warning(f'Unsupported column type {column_type}')
-                    return default_value
+                    return default_type
 
-        return {
-            str(column.name): {
-                'type': _column_type_to_json_schema_type(column.type)
-            }
-            for column in self.table_model.__table__.columns
-            if column.name != self.geom  # Exclude geometry column
-        }
+        def _column_format_to_json_schema_format(column_type):
+            try:
+                ct = str(column_type).lower()
+                return column_format_map[ct]
+            except KeyError:
+                LOGGER.debug('No string format detected')
+                return None
+
+        if not self._fields:
+            for column in self.table_model.__table__.columns:
+                LOGGER.debug(f'Testing {column.name}')
+                if column.name == self.geom:
+                    continue
+
+                self._fields[str(column.name)] = {
+                    'type': _column_type_to_json_schema_type(column.type),
+                    'format': _column_format_to_json_schema_format(column.type)
+                }
+
+        return self._fields
 
     def get(self, identifier, crs_transform_spec=None, **kwargs):
         """
