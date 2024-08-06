@@ -79,6 +79,7 @@ HEADERS = {
 
 CHARSET = ['utf-8']
 F_JSON = 'json'
+F_COVERAGEJSON = 'json'
 F_HTML = 'html'
 F_JSONLD = 'jsonld'
 F_GZIP = 'gzip'
