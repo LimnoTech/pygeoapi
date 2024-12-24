@@ -354,7 +354,7 @@ paths:
       - stac
 servers:
 - description: pygeoapi provides an API to geospatial data
-  url: http://localhost:5001
+  url: http://localhost:5002
 tags:
 - description: pygeoapi provides an API to geospatial data
   externalDocs:

@@ -10,7 +10,7 @@ server:
         # First language is the default language
         - en-US
         - fr-CA
-    # cors: true
+    cors: true
     pretty_print: true
     limit: 10
     # templates:
@@ -73,38 +73,57 @@ metadata:
         role: pointOfContact
 
 resources:
-  PRISM:
-    description:
-      Parameter-elevation Regressions on Independent Slopes Model Monthly
-      Climate Data for the Continental United States. January 2012 Shapshot
+  nhgf-stac-collection:
+    type: stac-collection
+    title: NHGF STAC
+    description: SpatioTemporal Asset Catalog for the USGS Water Mission Area
+    links:
+      - type: application/json
+        rel: canonical
+        title: NHGF STAC Catalog
+        href: https://code.usgs.gov/wma/nhgf/stac/-/raw/main/catalog/catalog.json
+        hreflang: en-US
     extents:
       spatial:
-        bbox:
-          - -125.02083587646484
-          - 24.10416603088379
-          - -66.52082824707031
-          - 49.937503814697266
+        bbox: [-180, -90, 180, 90]
         crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
-      temporal:
-        begin: 1895-01-01 00:00:00+00:00
-        end: 2013-02-01 00:00:00+00:00
-    keywords:
-      - s3
-      - usgs
-      - PRISM
     providers:
-      - data: s3://mdmf/gdp/PRISM.zarr
-        format:
-          mimetype: application/zip
-          name: zarr
-        name: xarray-edr
-        options:
-          s3:
-            anon: true
-            client_kwargs:
-              endpoint_url: https://usgs.osn.mghpcc.org/
-        type: edr
-        x_field: lon
-        y_field: lat
-    title: PRISM
-    type: collection
+      - type: stac
+        name: Hateoas
+        data: https://code.usgs.gov/wma/nhgf/stac/-/raw/main/catalog
+        file_types: catalog.json
+  # PRISM:
+  #   description:
+  #     Parameter-elevation Regressions on Independent Slopes Model Monthly
+  #     Climate Data for the Continental United States. January 2012 Shapshot
+  #   extents:
+  #     spatial:
+  #       bbox:
+  #         - -125.02083587646484
+  #         - 24.10416603088379
+  #         - -66.52082824707031
+  #         - 49.937503814697266
+  #       crs: http://www.opengis.net/def/crs/OGC/1.3/CRS84
+  #     temporal:
+  #       begin: 1895-01-01 00:00:00+00:00
+  #       end: 2013-02-01 00:00:00+00:00
+  #   keywords:
+  #     - s3
+  #     - usgs
+  #     - PRISM
+  #   providers:
+  #     - data: s3://mdmf/gdp/PRISM.zarr
+  #       format:
+  #         mimetype: application/zip
+  #         name: zarr
+  #       name: xarray-edr
+  #       options:
+  #         s3:
+  #           anon: true
+  #           client_kwargs:
+  #             endpoint_url: https://usgs.osn.mghpcc.org/
+  #       type: edr
+  #       x_field: lon
+  #       y_field: lat
+  #   title: PRISM
+  #   type: collection
