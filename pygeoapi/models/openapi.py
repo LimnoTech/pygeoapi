@@ -36,13 +36,16 @@ import pydantic
 
 
 class SupportedFormats(Enum):
-    JSON = 'json'
-    YAML = 'yaml'
+    JSON = "json"
+    YAML = "yaml"
+
 
 # Handle Pydantic v1/v2 compatibility
-if pydantic.VERSION.startswith('1'):
+if pydantic.VERSION.startswith("1"):
+
     class OAPIFormat(BaseModel):
         __root__: SupportedFormats = SupportedFormats.YAML
 else:
+
     class OAPIFormat(BaseModel):
         root: SupportedFormats = SupportedFormats.YAML
