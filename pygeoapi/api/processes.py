@@ -10,7 +10,7 @@
 #          Francesco Martinelli <francesco.martinelli@ingv.it>
 #
 # Copyright (c) 2024 Tom Kralidis
-# Copyright (c) 2022 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 # Copyright (c) 2022 John A Stevenson and Colin Blackburn
 # Copyright (c) 2023 Ricardo Garcia Silva
 # Copyright (c) 2024 Bernhard Mallinger
@@ -65,7 +65,7 @@ from . import (
 LOGGER = logging.getLogger(__name__)
 
 CONFORMANCE_CLASSES = [
-    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/ogc-process-description', # noqa
+    'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/ogc-process-description',  # noqa
     'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/core',
     'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/json',
     'http://www.opengis.net/spec/ogcapi-processes-1/1.0/conf/oas30',
@@ -725,6 +725,16 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                 'description': md_desc,
                 'tags': [name],
                 'operationId': f'execute{name.capitalize()}Job',
+                'parameters': [{
+                    'in': 'header',
+                    'name': 'Prefer',
+                    'required': False,
+                    'description': 'Indicates client preferences, including whether the client is capable of asynchronous processing.',  # noqa
+                    'schema': {
+                        'type': 'string',
+                        'enum': ['respond-async']
+                    }
+                }],
                 'responses': {
                     '200': {'$ref': '#/components/responses/200'},
                     '201': {'$ref': f"{OPENAPI_YAML['oapip']}/responses/ExecuteAsync.yaml"},  # noqa

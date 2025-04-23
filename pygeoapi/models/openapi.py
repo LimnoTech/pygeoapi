@@ -4,7 +4,7 @@
 #
 # Authors: Francesco Bartoli <xbartolone@gmail.com>
 #
-# Copyright (c) 2024 Francesco Bartoli
+# Copyright (c) 2025 Francesco Bartoli
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -39,5 +39,5 @@ class SupportedFormats(Enum):
     YAML = "yaml"
 
 
-class OAPIFormat(RootModel):
+class OAPIFormat(BaseModel):
     root: SupportedFormats = SupportedFormats.YAML
