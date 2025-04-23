@@ -771,7 +771,7 @@ def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, 
                         }
                     }
                 }
-        except (IndexError, KeyError):
+        except (IndexError, KeyError, TypeError):
             LOGGER.debug('No output defined')
 
         if 'example' in p.metadata:
