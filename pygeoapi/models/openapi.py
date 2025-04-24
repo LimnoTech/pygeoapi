@@ -31,7 +31,7 @@
 
 from enum import Enum
 
-from pydantic import RootModel
+from pydantic import BaseModel
 
 
 class SupportedFormats(Enum):
