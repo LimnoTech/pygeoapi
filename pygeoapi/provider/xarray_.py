@@ -346,9 +346,9 @@ class XarrayProvider(BaseProvider):
         if self.time_field is not None:
             cj['domain']['axes']['t'] = {
                 'values': [str(v) for v in (
-                    [data[self.time_field].values]
-                    if np.isscalar(data[self.time_field].values)
-                    else data[self.time_field].values
+                    data[self.time_field].values
+                    if hasattr(data[self.time_field].values, '__iter__')
+                    else [data[self.time_field].values]
                     )
                 ]
             }
