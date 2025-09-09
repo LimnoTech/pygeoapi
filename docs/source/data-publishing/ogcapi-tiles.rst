@@ -49,7 +49,7 @@ This code block shows how to configure pygeoapi to read Mapbox vector tiles gene
              zoom:
                  min: 0
                  max: 5
-        # MVT-elastic always uses WebMercatorQuad tiling scheme
+        # MVT-tippecanoe always uses WebMercatorQuad tiling scheme
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
@@ -103,12 +103,12 @@ Following block shows how to configure pygeoapi to read Mapbox vector tiles from
        - type: tile
          name: MVT-proxy
          data: http://localhost:7800/public.ne_50m_admin_0_countries/{z}/{x}/{y}.mvt
-            options:
-              zoom:
-                min: 0
-                max: 15
-              schemes:
-                - WebMercatorQuad # this option is needed in the MVT-proxy provider
+         options:
+             zoom:
+                 min: 0
+                 max: 15
+             schemes:
+                 - WebMercatorQuad # this option is needed in the MVT-proxy provider
          format:
              name: pbf
              mimetype: application/vnd.mapbox-vector-tile
@@ -200,6 +200,16 @@ This code block shows how to configure pygeoapi to read map tiles from a WMTS.
              zoom:
                  min: 0
                  max: 20
+
+
+Providing custom Tile Matrix Set definitions
+--------------------------------------------
+
+By default, pygeoapi provides the ``WorldCRS84Quad`` and ``WebMercatorQuad`` TMS
+definitions, for tile providers to use accordingly. Additional TMS definitions
+may be added in pygeoapi's ``resources/definitions/tiles`` (for example, by adding
+TMS definition files directly, volume mapping / Docker ``COPY``, Docker Compose ``volumes``, etc.).
+
 
 Data access examples
 --------------------

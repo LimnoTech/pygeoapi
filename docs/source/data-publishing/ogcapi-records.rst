@@ -18,9 +18,9 @@ parameters.
    :header: Provider, properties (filters), resulttype, q, bbox, datetime, sortby, properties (display), domains, CQL, transactions
    :align: left
 
-   `ElasticsearchCatalogue`_,✅,results/hits,✅,✅,✅,✅,✅,✅,✅
-   `TinyDBCatalogue`_,✅,results/hits,✅,✅,✅,✅,❌,✅,✅,✅,✅
-   `CSWFacade`_,✅,results/hits,✅,✅,✅,❌,❌,✅,❌,❌
+   `ElasticsearchCatalogue`_,✅,results/hits,✅,✅,✅,✅,✅,✅,✅,✅
+   `TinyDBCatalogue`_,✅,results/hits,✅,✅,✅,✅,❌,✅,✅,✅
+   `CSWFacade`_,✅,results/hits,✅,✅,✅,✅,❌,✅,❌,❌
 
 
 Below are specific connection examples based on supported providers.
@@ -95,6 +95,11 @@ CSW Record core model is supported as a baseline.
          time_field: datetime
          title_field: title
 
+
+Including extra query parameters
+--------------------------------
+
+See the :ref:`publishing vector section <including-extra-query-parameters>` for more information on including extra query parameters.
 
 Metadata search examples
 ------------------------
