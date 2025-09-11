@@ -766,7 +766,7 @@ def get_crs_from_uri(uri: str) -> pyproj.CRS:
 
 
 def get_transform_from_crs(
-    crs_in: pyproj.CRS, crs_out: pyproj.CRS, always_xy: bool = False
+    crs_in: pyproj.CRS, crs_out: pyproj.CRS, always_xy: bool = True
 ) -> Callable[[GeomObject], GeomObject]:
     """ Get transformation function from two `pyproj.CRS` instances.
 
