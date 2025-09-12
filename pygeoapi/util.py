@@ -889,7 +889,7 @@ def transform_bbox(bbox: list, from_crs: str, to_crs: str) -> list:
     from_crs_obj = get_crs_from_uri(from_crs)
     to_crs_obj = get_crs_from_uri(to_crs)
     transform_func = pyproj.Transformer.from_crs(
-        from_crs_obj, to_crs_obj).transform
+        from_crs_obj, to_crs_obj, always_xy=True).transform
     n_dims = len(bbox) // 2
     return list(transform_func(*bbox[:n_dims]) + transform_func(
         *bbox[n_dims:]))
