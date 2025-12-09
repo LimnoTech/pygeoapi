@@ -380,10 +380,16 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
                     feature['bbox'] = geom.bounds
 
                 if feature.get('links') is None:
-                    feature['links'] = []
+                    feature['links'] = feature\
+                        .get('properties', {})\
+                            .get('content', {})\
+                                .get('links', [])
 
                 if feature.get('assets') is None:
-                    feature['assets'] = {}
+                    feature['assets'] = feature\
+                        .get('properties', {})\
+                            .get('content', {})\
+                                .get('assets', {})
 
     stac_api_response['numberReturned'] = len(stac_api_response['features'])
 
