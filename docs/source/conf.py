@@ -93,7 +93,7 @@ templates_path = ['_templates']
 # You can specify multiple suffix as a list of string:
 #
 # source_suffix = ['.rst', '.md']
-source_suffix = '.rst'
+source_suffix = {'.rst': 'restructuredtext'}
 
 # The master toctree document.
 master_doc = 'index'
@@ -112,7 +112,7 @@ today_fmt = '%Y-%m-%d'
 # built documents.
 #
 # The short X.Y version.
-version = '0.22.dev0'
+version = '0.23.dev0'
 # The full version, including alpha/beta/rc tags.
 release = version
 

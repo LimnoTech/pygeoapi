@@ -39,6 +39,7 @@ from typing import Optional, Union
 
 from django.conf import settings
 from django.http import HttpRequest, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from pygeoapi.api import API, APIRequest, apply_gzip
 import pygeoapi.api as core_api
@@ -343,6 +344,7 @@ def processes(request: HttpRequest,
                                process_id)
 
 
+@csrf_exempt
 def process_execution(request: HttpRequest, process_id: str) -> HttpResponse:
     """
     OGC API - Processes execution endpoint
@@ -450,6 +452,30 @@ def get_collection_edr_query(
         location_id,
         skip_valid_check=True
     )
+
+
+def stac_landing_page(request: HttpRequest) -> HttpResponse:
+    """
+    STAC API landing page endpoint
+
+    :request Django HTTP Request
+
+    :returns: Django HTTP response
+    """
+
+    return execute_from_django(stac_api.landing_page, request)
+
+
+def stac_search(request: HttpRequest) -> HttpResponse:
+    """
+    STAC API search endpoint
+
+    :request Django HTTP Request
+
+    :returns: Django HTTP response
+    """
+
+    return execute_from_django(stac_api.search, request)
 
 
 def stac_catalog_root(request: HttpRequest) -> HttpResponse:
