@@ -496,18 +496,20 @@ def get_temporal(feature: dict) -> dict:
     if datetime_ is None and None not in [start_datetime, end_datetime]:
         LOGGER.debug('Temporal range partially exists')
     elif datetime_ is not None:
+        value['datetime'] = datetime_
         LOGGER.debug('Temporal instant exists')
 
     LOGGER.debug('Attempting to derive temporal from GeoJSON feature')
     LOGGER.debug(feature)
-    if feature.get('time') is not None:
+    if not value.get('datetime') and feature.get('time') is not None:
         if feature['time'].get('timestamp') is not None:
             value['datetime'] = feature['time']['timestamp']
         if feature['time'].get('interval') is not None:
             value['start_datetime'] = feature['time']['interval'][0]
             value['end_datetime'] = feature['time']['interval'][1]
 
-    if feature['properties'].get('created') is not None:
+    if not value.get('datetime') \
+        and feature['properties'].get('created') is not None:
         value['datetime'] = feature['properties']['created']
 
     if not value:
