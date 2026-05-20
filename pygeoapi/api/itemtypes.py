@@ -975,7 +975,7 @@ def get_collection_item(api: API, request: APIRequest,
         'href': f'{uri}?f={F_HTML}'
         }, {
         'rel': 'collection',
-        'type': FORMAT_TYPES[F_JSON],
+        'type': FORMAT_TYPES[F_HTML],
         'title': l10n.translate(collections[dataset]['title'],
                                 request.locale),
         'href': f'{api.get_collections_url()}/{dataset}'
