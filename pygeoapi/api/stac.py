@@ -339,15 +339,29 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
         request_data = json.loads(request.data)
         request_params = deepcopy(dict(request.params))
 
-        for qp in ['bbox', 'datetime', 'limit', 'offset']:
+        for qp in ['bbox', 'datetime', 'limit', 'offset', 'collections']:
             if qp in request_data:
                 if qp == 'bbox' and isinstance(request_data[qp], list):
                     request_params[qp] = ','.join(str(b) for b in request_data[qp])  # noqa
+                elif qp == 'collections' and isinstance(request_data[qp], list):
+                    request_params[qp] = ','.join(
+                        str(c) for c in request_data[qp]
+                    )
                 else:
                     request_params[qp] = request_data[qp]
 
         request._args = request_params
         request._data = None
+
+    collections_param = request.params.get('collections')
+    if collections_param:
+        collections_list = [
+            c.strip() for c in collections_param.split(',') if c.strip()
+        ]
+    else:
+        collections_list = []
+
+    saved_args = request._args
 
     stac_api_response = {
         'type': 'FeatureCollection',
@@ -357,6 +371,35 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
     }
 
     for key, value in stac_api_collections.items():
+        if collections_list:
+            id_field = 'id'
+            for pt in ['feature', 'record']:
+                try:
+                    pdef = get_provider_by_type(value['providers'], pt)
+                    id_field = pdef.get('id_field', 'id')
+                    break
+                except ProviderTypeError:
+                    pass
+
+            escaped = [
+                "'{}'".format(c.replace("'", "''"))
+                for c in collections_list
+            ]
+            if len(escaped) == 1:
+                cql_filter = f'{id_field} = {escaped[0]}'
+            else:
+                cql_filter = f"{id_field} IN ({','.join(escaped)})"
+
+            existing_filter = request.params.get('filter')
+            if existing_filter:
+                cql_filter = f'({existing_filter}) AND ({cql_filter})'
+
+            request._args = {
+                **dict(saved_args),
+                'filter': cql_filter,
+                'filter-lang': 'cql-text'
+            }
+
         api.config['resources'][key]['type'] = 'collection'
         headers, status, content = itemtypes_api.get_collection_items(
             api, request, key)
@@ -398,6 +441,7 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
 
     next_link = False
     prev_link = False
+    request._args = saved_args
     request_params = deepcopy(dict(request._args))
     limit = itemtypes_api.evaluate_limit(
         request_params.get('limit'),
