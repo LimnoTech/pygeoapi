@@ -256,7 +256,10 @@ def landing_page(api: API,
     content['conformsTo'] = [
         'https://api.stacspec.org/v1.0.0/core',
         'https://api.stacspec.org/v1.0.0/item-search',
-        'https://api.stacspec.org/v1.0.0/item-search#sort'
+        'https://api.stacspec.org/v1.0.0/item-search#sort',
+        'https://api.stacspec.org/v1.0.0/item-search#filter',
+        'http://www.opengis.net/spec/cql2/1.0/conf/cql2-text',
+        'http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2'
     ]
     content['type'] = 'Catalog'
 
