@@ -66,6 +66,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 CONFORMANCE_CLASSES = []
+STAC_NAV_RELS = ('self', 'root', 'parent', 'collection')
 
 
 # TODO: no tests for this?
@@ -422,8 +423,8 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
                     geom = from_geojson(json.dumps(feature['geometry']))
                     feature['bbox'] = geom.bounds
 
-                if feature.get('links') is None:
-                    feature['links'] = []
+                feature['links'] = _rewrite_item_links(
+                    api.base_url, feature)
 
                 if feature.get('assets') is None:
                     feature['assets'] = {}
@@ -554,3 +555,55 @@ def get_temporal(feature: dict) -> dict:
         value['datetime'] = get_current_datetime()
 
     return value
+
+
+def _rewrite_item_links(base_url: str, feature: dict) -> list:
+    """
+    Build a STAC Item's link relations for API delivery.
+
+    A source catalog authors ``self``/``root``/``parent``/``collection`` links
+    relative to its static file layout (e.g. ``../collection.json``); these are
+    meaningless once the Item is served over the API and break clients that
+    expect an absolute ``self``. This replaces those navigation links with
+    absolute STAC API links, while preserving any portable absolute links
+    already present on the Item (e.g. ``cite-as``).
+
+    :param base_url: `str` of the API base URL
+    :param feature: `dict` of a STAC Item
+
+    :returns: `list` of link relations
+    """
+    stac_url = f'{base_url}/stac-api'
+    collection = feature.get('collection')
+    identifier = feature.get('id')
+
+    # Preserve only portable links: an absolute href and not a navigation rel.
+    preserved = [
+        link for link in (feature.get('links') or [])
+        if link.get('rel') not in STAC_NAV_RELS
+        and str(link.get('href', '')).startswith(('http://', 'https://'))
+    ]
+
+    links = []
+    if collection is not None and identifier is not None:
+        links.append({
+            'rel': 'self',
+            'type': FORMAT_TYPES[F_JSON],
+            'href': f'{stac_url}/collections/{collection}/items/{identifier}?f={F_JSON}'  # noqa
+        })
+
+    links.append({
+        'rel': 'root',
+        'type': FORMAT_TYPES[F_JSON],
+        'href': f'{stac_url}?f={F_JSON}'
+    })
+
+    if collection is not None:
+        for rel in ('parent', 'collection'):
+            links.append({
+                'rel': rel,
+                'type': FORMAT_TYPES[F_JSON],
+                'href': f'{stac_url}/collections/{collection}?f={F_JSON}'
+            })
+
+    return links + preserved
