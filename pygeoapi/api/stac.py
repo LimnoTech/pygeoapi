@@ -259,6 +259,7 @@ def landing_page(api: API,
         'https://api.stacspec.org/v1.0.0/item-search#sort',
         'https://api.stacspec.org/v1.0.0/item-search#filter',
         'http://www.opengis.net/spec/cql2/1.0/conf/cql2-text',
+        'http://www.opengis.net/spec/cql2/1.0/conf/cql2-json',
         'http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2'
     ]
     content['type'] = 'Catalog'
@@ -343,6 +344,10 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
         request_data = json.loads(request.data)
         request_params = deepcopy(dict(request.params))
 
+        # a cql2-json filter is an object, not a query-param string; it is
+        # carried through the request body to pygeoapi's cql2-json path
+        json_filter = None
+
         for qp in ['bbox', 'datetime', 'limit', 'offset', 'collections',
                    'ids', 'sortby', 'filter', 'filter-lang']:
             if qp in request_data:
@@ -358,15 +363,18 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
                     request_params[qp] = ','.join(
                         _sortby_to_token(s) for s in request_data[qp]
                     )
-                elif qp == 'filter' and not isinstance(request_data[qp], str):
-                    # only cql2-text (string) filters are supported over POST;
-                    # cql2-json (object) filters are dropped for now
-                    LOGGER.debug('Ignoring non-string (cql2-json) POST filter')
+                elif qp == 'filter' and isinstance(request_data[qp], dict):
+                    json_filter = request_data[qp]
                 else:
                     request_params[qp] = request_data[qp]
 
         request._args = request_params
-        request._data = None
+        # expose a cql2-json filter as the body so get_collection_items parses
+        # it via its cql2-json path; otherwise the body is fully consumed
+        request._data = (
+            json.dumps(json_filter).encode() if json_filter is not None
+            else None
+        )
 
     collections_param = request.params.get('collections')
     if collections_param:

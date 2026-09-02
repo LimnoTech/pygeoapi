@@ -54,8 +54,10 @@ def test_landing_page(config, api_):
 
     assert isinstance(response, dict)
     assert 'links' in response
-    assert len(response['conformsTo']) == 6
+    assert len(response['conformsTo']) == 7
     assert 'https://api.stacspec.org/v1.0.0/item-search#filter' \
+        in response['conformsTo']
+    assert 'http://www.opengis.net/spec/cql2/1.0/conf/cql2-json' \
         in response['conformsTo']
     assert response['type'] == 'Catalog'
     assert response['links'][0]['rel'] == 'self'
