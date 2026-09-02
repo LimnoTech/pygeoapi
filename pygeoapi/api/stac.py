@@ -341,11 +341,11 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
         request_params = deepcopy(dict(request.params))
 
         for qp in ['bbox', 'datetime', 'limit', 'offset', 'collections',
-                   'sortby']:
+                   'ids', 'sortby']:
             if qp in request_data:
                 if qp == 'bbox' and isinstance(request_data[qp], list):
                     request_params[qp] = ','.join(str(b) for b in request_data[qp])  # noqa
-                elif qp == 'collections' and isinstance(request_data[qp], list):
+                elif qp in ('collections', 'ids') and isinstance(request_data[qp], list):  # noqa
                     request_params[qp] = ','.join(
                         str(c) for c in request_data[qp]
                     )
@@ -369,6 +369,12 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
     else:
         collections_list = []
 
+    ids_param = request.params.get('ids')
+    if ids_param:
+        ids_list = [i.strip() for i in ids_param.split(',') if i.strip()]
+    else:
+        ids_list = []
+
     saved_args = request._args
 
     stac_api_response = {
@@ -379,7 +385,7 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
     }
 
     for key, value in stac_api_collections.items():
-        if collections_list:
+        if collections_list or ids_list:
             id_field = 'id'
             for pt in ['feature', 'record']:
                 try:
@@ -389,22 +395,19 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
                 except ProviderTypeError:
                     pass
 
-            escaped = [
-                "'{}'".format(c.replace("'", "''"))
-                for c in collections_list
-            ]
-            if len(escaped) == 1:
-                cql_filter = f'{id_field} = {escaped[0]}'
-            else:
-                cql_filter = f"{id_field} IN ({','.join(escaped)})"
+            cql_terms = []
+            if collections_list:
+                cql_terms.append(_cql_in(id_field, collections_list))
+            if ids_list:
+                cql_terms.append(_cql_in(id_field, ids_list))
 
             existing_filter = request.params.get('filter')
             if existing_filter:
-                cql_filter = f'({existing_filter}) AND ({cql_filter})'
+                cql_terms.append(f'({existing_filter})')
 
             request._args = {
                 **dict(saved_args),
-                'filter': cql_filter,
+                'filter': ' AND '.join(cql_terms),
                 'filter-lang': 'cql-text'
             }
 
@@ -562,6 +565,22 @@ def get_temporal(feature: dict) -> dict:
         value['datetime'] = get_current_datetime()
 
     return value
+
+
+def _cql_in(field: str, values: list) -> str:
+    """
+    Build a CQL-text equality/membership predicate for a field.
+
+    :param field: column/property name
+    :param values: `list` of string values
+
+    :returns: `str` CQL-text predicate -- ``field = 'v'`` for a single value,
+              ``field IN ('a','b')`` for several
+    """
+    escaped = ["'{}'".format(v.replace("'", "''")) for v in values]
+    if len(escaped) == 1:
+        return f'{field} = {escaped[0]}'
+    return f"{field} IN ({','.join(escaped)})"
 
 
 def _sortby_to_token(entry) -> str:
