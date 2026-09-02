@@ -151,3 +151,12 @@ def test_sortby_to_token_converts_stac_post_form():
     assert _sortby_to_token({"field": "id"}) == "id"
     # plain strings pass through unchanged
     assert _sortby_to_token("-datetime") == "-datetime"
+
+
+def test_cql_in_builds_predicates():
+    from pygeoapi.api.stac import _cql_in
+
+    assert _cql_in("id", ["a"]) == "id = 'a'"
+    assert _cql_in("id", ["a", "b"]) == "id IN ('a','b')"
+    # single quotes in values are escaped (doubled)
+    assert _cql_in("id", ["O'Brien"]) == "id = 'O''Brien'"
