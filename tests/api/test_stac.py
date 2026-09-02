@@ -31,7 +31,7 @@ import json
 
 import pytest
 
-from pygeoapi.api.stac import search, landing_page
+from pygeoapi.api.stac import search, landing_page, _rewrite_item_links
 from pygeoapi.formats import FORMAT_TYPES, F_JSON
 from pygeoapi.util import yaml_load
 
@@ -95,3 +95,47 @@ def test_search(config, api_, params, matched, returned):
 
     for feature in response['features']:
         assert feature['stac_version'] == '1.0.0'
+
+
+def test_rewrite_item_links_mints_absolute_nav_links():
+    feature = {
+        'id': 'Annual_NLCD_LndCov_2006',
+        'collection': 'nlcd-LndCov',
+        'links': [
+            {'rel': 'cite-as', 'href': 'https://doi.org/10.5066/P94UXNTS'},
+            {'rel': 'root', 'href': '../../../catalog.json',
+             'type': 'application/json'},
+            {'rel': 'collection', 'href': '../collection.json',
+             'type': 'application/json'},
+            {'rel': 'parent', 'href': '../collection.json',
+             'type': 'application/json'},
+        ],
+    }
+
+    links = _rewrite_item_links('http://localhost:5000', feature)
+
+    by_rel = {}
+    for link in links:
+        by_rel.setdefault(link['rel'], []).append(link['href'])
+
+    stac = 'http://localhost:5000/stac-api'
+    # relative nav links are replaced with absolute STAC API links
+    assert by_rel['self'] == [
+        f'{stac}/collections/nlcd-LndCov/items/Annual_NLCD_LndCov_2006?f=json']
+    assert by_rel['root'] == [f'{stac}?f=json']
+    assert by_rel['collection'] == [f'{stac}/collections/nlcd-LndCov?f=json']
+    assert by_rel['parent'] == [f'{stac}/collections/nlcd-LndCov?f=json']
+
+    # no relative hrefs remain (this is what broke pystac_client)
+    all_hrefs = [h for hrefs in by_rel.values() for h in hrefs]
+    assert all(h.startswith('http') for h in all_hrefs)
+
+    # portable absolute links are preserved
+    assert by_rel['cite-as'] == ['https://doi.org/10.5066/P94UXNTS']
+
+
+def test_rewrite_item_links_without_collection_only_root():
+    links = _rewrite_item_links('http://localhost:5000', {'id': 'x'})
+
+    assert [link['rel'] for link in links] == ['root']
+    assert links[0]['href'] == 'http://localhost:5000/stac-api?f=json'
