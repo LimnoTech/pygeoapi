@@ -341,7 +341,7 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
         request_params = deepcopy(dict(request.params))
 
         for qp in ['bbox', 'datetime', 'limit', 'offset', 'collections',
-                   'ids', 'sortby']:
+                   'ids', 'sortby', 'filter', 'filter-lang']:
             if qp in request_data:
                 if qp == 'bbox' and isinstance(request_data[qp], list):
                     request_params[qp] = ','.join(str(b) for b in request_data[qp])  # noqa
@@ -355,6 +355,10 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
                     request_params[qp] = ','.join(
                         _sortby_to_token(s) for s in request_data[qp]
                     )
+                elif qp == 'filter' and not isinstance(request_data[qp], str):
+                    # only cql2-text (string) filters are supported over POST;
+                    # cql2-json (object) filters are dropped for now
+                    LOGGER.debug('Ignoring non-string (cql2-json) POST filter')
                 else:
                     request_params[qp] = request_data[qp]
 
