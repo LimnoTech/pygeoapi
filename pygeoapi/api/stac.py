@@ -340,13 +340,20 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
         request_data = json.loads(request.data)
         request_params = deepcopy(dict(request.params))
 
-        for qp in ['bbox', 'datetime', 'limit', 'offset', 'collections']:
+        for qp in ['bbox', 'datetime', 'limit', 'offset', 'collections',
+                   'sortby']:
             if qp in request_data:
                 if qp == 'bbox' and isinstance(request_data[qp], list):
                     request_params[qp] = ','.join(str(b) for b in request_data[qp])  # noqa
                 elif qp == 'collections' and isinstance(request_data[qp], list):
                     request_params[qp] = ','.join(
                         str(c) for c in request_data[qp]
+                    )
+                elif qp == 'sortby' and isinstance(request_data[qp], list):
+                    # STAC POST sends sortby as [{field, direction}]; pygeoapi
+                    # expects a comma-separated string of +/-field tokens.
+                    request_params[qp] = ','.join(
+                        _sortby_to_token(s) for s in request_data[qp]
                     )
                 else:
                     request_params[qp] = request_data[qp]
@@ -555,6 +562,25 @@ def get_temporal(feature: dict) -> dict:
         value['datetime'] = get_current_datetime()
 
     return value
+
+
+def _sortby_to_token(entry) -> str:
+    """
+    Convert a STAC POST sortby element to a pygeoapi sortby token.
+
+    STAC item-search POST bodies express sort as
+    ``{"field": <name>, "direction": "asc"|"desc"}``; pygeoapi's ``sortby``
+    query parameter expects ``field`` (ascending) or ``-field`` (descending).
+
+    :param entry: a `dict` sortby element, or a plain field name `str`
+
+    :returns: `str` sortby token
+    """
+    if isinstance(entry, dict):
+        field = entry.get('field', '')
+        prefix = '-' if entry.get('direction') == 'desc' else ''
+        return f'{prefix}{field}'
+    return str(entry)
 
 
 def _rewrite_item_links(base_url: str, feature: dict) -> list:

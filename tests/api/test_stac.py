@@ -139,3 +139,15 @@ def test_rewrite_item_links_without_collection_only_root():
 
     assert [link['rel'] for link in links] == ['root']
     assert links[0]['href'] == 'http://localhost:5000/stac-api?f=json'
+
+
+def test_sortby_to_token_converts_stac_post_form():
+    from pygeoapi.api.stac import _sortby_to_token
+
+    # STAC POST elements: {field, direction} -> pygeoapi +/-field tokens
+    assert _sortby_to_token({"field": "datetime", "direction": "asc"}) == "datetime"  # noqa: E501
+    assert _sortby_to_token({"field": "datetime", "direction": "desc"}) == "-datetime"  # noqa: E501
+    # missing direction defaults to ascending
+    assert _sortby_to_token({"field": "id"}) == "id"
+    # plain strings pass through unchanged
+    assert _sortby_to_token("-datetime") == "-datetime"
