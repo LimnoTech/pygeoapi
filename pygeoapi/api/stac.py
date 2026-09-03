@@ -344,12 +344,14 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
         request_data = json.loads(request.data)
         request_params = deepcopy(dict(request.params))
 
-        # a cql2-json filter is an object, not a query-param string; it is
-        # carried through the request body to pygeoapi's cql2-json path
+        # a cql2-json filter and an intersects geometry are objects, not
+        # query-param strings; they are carried through the request body to
+        # pygeoapi's cql2-json filter path
         json_filter = None
+        intersects = None
 
         for qp in ['bbox', 'datetime', 'limit', 'offset', 'collections',
-                   'ids', 'sortby', 'filter', 'filter-lang']:
+                   'ids', 'sortby', 'filter', 'filter-lang', 'intersects']:
             if qp in request_data:
                 if qp == 'bbox' and isinstance(request_data[qp], list):
                     request_params[qp] = ','.join(str(b) for b in request_data[qp])  # noqa
@@ -365,8 +367,22 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
                     )
                 elif qp == 'filter' and isinstance(request_data[qp], dict):
                     json_filter = request_data[qp]
+                elif qp == 'intersects' and isinstance(request_data[qp], dict):
+                    intersects = request_data[qp]
                 else:
                     request_params[qp] = request_data[qp]
+
+        # translate an intersects geometry into a cql2-json S_INTERSECTS term,
+        # combined (AND) with any explicit cql2-json filter
+        if intersects is not None:
+            s_intersects = {
+                'op': 's_intersects',
+                'args': [{'property': 'geometry'}, intersects]
+            }
+            json_filter = (
+                {'op': 'and', 'args': [json_filter, s_intersects]}
+                if json_filter is not None else s_intersects
+            )
 
         request._args = request_params
         # expose a cql2-json filter as the body so get_collection_items parses
