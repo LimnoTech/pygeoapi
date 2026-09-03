@@ -402,17 +402,20 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
     for key, value in stac_api_collections.items():
         if collections_list or ids_list:
             id_field = 'id'
+            collection_field = 'collection'
             for pt in ['feature', 'record']:
                 try:
                     pdef = get_provider_by_type(value['providers'], pt)
                     id_field = pdef.get('id_field', 'id')
+                    collection_field = pdef.get('collection_field',
+                                                'collection')
                     break
                 except ProviderTypeError:
                     pass
 
             cql_terms = []
             if collections_list:
-                cql_terms.append(_cql_in(id_field, collections_list))
+                cql_terms.append(_cql_in(collection_field, collections_list))
             if ids_list:
                 cql_terms.append(_cql_in(id_field, ids_list))
 
