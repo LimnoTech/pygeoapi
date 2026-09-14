@@ -32,7 +32,7 @@ import logging
 import shapely
 from geoalchemy2.shape import to_shape
 from sqlalchemy.orm import Session
-from sqlalchemy.sql.expression import and_
+from sqlalchemy.sql.expression import and_, or_
 
 from pygeoapi.provider.base import ProviderItemNotFoundError
 from pygeoapi.provider.sql import PostgreSQLProvider
@@ -67,8 +67,9 @@ class STACSQLProvider(PostgreSQLProvider):
       when a ``collection`` is configured, scope every query to it so a single
       ``stac_items`` table can back many single-collection resources.
     - ``collections`` -- reshape ``stac_collections`` rows into STAC
-      Collections. Planned for the collections-search work; not yet
-      implemented (raises :class:`NotImplementedError`).
+      Collections. ``datetime`` filtering becomes an interval overlap against
+      the collection's ``start_datetime``/``end_datetime`` columns, and ``q``
+      free-text search matches the ``title``/``description`` columns.
 
     Provider definition keys (in addition to the PostgreSQL provider's):
 
@@ -79,7 +80,16 @@ class STACSQLProvider(PostgreSQLProvider):
                  in the table)
     :collection_field: name of the column holding the collection id
                        (default ``collection``)
+    :start_datetime_field: (``collections`` mode) name of the column holding
+                           the extent start (default ``start_datetime``)
+    :end_datetime_field: (``collections`` mode) name of the column holding the
+                         extent end (default ``end_datetime``)
     """
+
+    #: Internal ``properties`` key used to smuggle a free-text ``q`` term
+    #: through :meth:`query` into :meth:`_get_property_filters` (which turns
+    #: it into a title/description ``ILIKE``). Not a real column.
+    _Q_SENTINEL = '__stac_q__'
 
     def __init__(self, provider_def: dict):
         """
@@ -94,13 +104,14 @@ class STACSQLProvider(PostgreSQLProvider):
             raise ValueError(
                 f'Unsupported STAC provider mode: {self.mode!r} '
                 f'(expected one of {SUPPORTED_MODES})')
-        if self.mode == 'collections':
-            raise NotImplementedError(
-                'STACSQLProvider collections mode is not yet implemented')
 
         self.collection_field = provider_def.get(
             'collection_field', 'collection')
         self.collection = provider_def.get('collection')
+        self.start_datetime_field = provider_def.get(
+            'start_datetime_field', 'start_datetime')
+        self.end_datetime_field = provider_def.get(
+            'end_datetime_field', 'end_datetime')
         super().__init__(provider_def)
         LOGGER.debug(f'Mode: {self.mode}')
         LOGGER.debug(f'Collection field: {self.collection_field}')
@@ -108,6 +119,65 @@ class STACSQLProvider(PostgreSQLProvider):
 
     def _sqlalchemy_to_feature(self, item, crs_transform_out=None,
                                select_properties=None):
+        """
+        Reshape a reflected row into the STAC document for this provider's
+        mode: a STAC Item (``items``) or a STAC Collection (``collections``).
+
+        :param item: SQLAlchemy result
+        :param crs_transform_out: CRS transformation
+        :param select_properties: ignored; STAC docs are whole documents
+
+        :returns: `dict` of a STAC Item or Collection
+        """
+        if self.mode == 'collections':
+            return self._row_to_collection(item)
+        return self._row_to_item(item, crs_transform_out, select_properties)
+
+    def _row_to_collection(self, item):
+        """
+        Transform a reflected ``stac_collections`` row into a STAC Collection.
+
+        The derived query-acceleration columns (``geometry``, the datetime
+        bounds, ``created_at``/``updated_at``) are dropped; the STAC top-level
+        fields and any JSONB extension blobs are lifted to the top level.
+
+        :param item: SQLAlchemy result
+
+        :returns: `dict` of a STAC Collection
+        """
+        item_dict = item.__dict__
+
+        collection = {
+            'type': item_dict.get('type') or 'Collection',
+            'stac_version': item_dict.get('stac_version')
+            or DEFAULT_STAC_VERSION,
+            'id': item_dict[self.id_field],
+            'description': item_dict.get('description') or '',
+            'links': item_dict.get('links') or [],
+        }
+
+        # STAC top-level fields, lifted verbatim when present.
+        for key in ('title', 'license', 'extent', 'assets', 'summaries',
+                    'stac_extensions', 'keywords', 'providers'):
+            value = item_dict.get(key)
+            if value is not None:
+                collection[key] = value
+
+        # Extension fields stored in their own JSONB columns.
+        for key in ('sci:doi', 'cube:dimensions', 'cube:variables'):
+            value = item_dict.get(key)
+            if value is not None:
+                collection[key] = value
+
+        # A residual JSONB ``properties`` blob (if any) is merged in without
+        # clobbering fields already set from dedicated columns.
+        for key, value in (item_dict.get('properties') or {}).items():
+            collection.setdefault(key, value)
+
+        return collection
+
+    def _row_to_item(self, item, crs_transform_out=None,
+                     select_properties=None):
         """
         Transform a reflected STAC Items row into a STAC Item GeoJSON Feature.
 
@@ -162,42 +232,77 @@ class STACSQLProvider(PostgreSQLProvider):
 
     def _get_property_filters(self, properties):
         """
-        Extend the parent property filters with the collection scope so that
-        every :meth:`query` is confined to this resource's collection.
+        Extend the parent property filters with this provider's extra scopes:
+        the ``items`` collection scope and the ``collections`` free-text
+        (``q``) search, either of which may be absent.
 
-        :param properties: list of tuples (name, value)
+        :param properties: list of tuples (name, value); a
+                           :attr:`_Q_SENTINEL` entry carries a free-text term
 
         :returns: SQLAlchemy filter expression
         """
-        filters = super()._get_property_filters(properties)
+        freetext = None
+        passthrough = []
+        for name, value in properties:
+            if name == self._Q_SENTINEL:
+                freetext = value
+            else:
+                passthrough.append((name, value))
 
-        if self.collection is None:
-            return filters
+        filters = super()._get_property_filters(passthrough)
 
-        collection_column = getattr(self.table_model, self.collection_field)
-        collection_filter = collection_column == self.collection
+        extra = []
+        if freetext is not None:
+            extra.append(self._freetext_clause(freetext))
+        if self.collection is not None:
+            collection_column = getattr(
+                self.table_model, self.collection_field)
+            extra.append(collection_column == self.collection)
 
         # The parent returns ``True`` ("let everything through") when no
         # property filters are configured; avoid a redundant and_(True, ...).
-        if filters is True:
-            return collection_filter
-        return and_(filters, collection_filter)
+        if not extra:
+            return filters
+        if filters is not True:
+            extra.insert(0, filters)
+        return extra[0] if len(extra) == 1 else and_(*extra)
+
+    def _freetext_clause(self, q):
+        """
+        Build a case-insensitive ``ILIKE`` over a collection's title or
+        description for a free-text ``q`` term.
+
+        :param q: free-text search term
+
+        :returns: SQLAlchemy boolean expression
+        """
+        pattern = f'%{q}%'
+        title = getattr(self.table_model, 'title')
+        description = getattr(self.table_model, 'description')
+        return or_(title.ilike(pattern), description.ilike(pattern))
 
     def get(self, identifier, crs_transform_spec=None, **kwargs):
         """
-        Query the provider for a specific item by id.
+        Query the provider for a specific document by id.
 
-        For a collection-scoped resource, an id that resolves to a row in a
-        different collection is treated as not found, and the prev/next links
-        are confined to the configured collection.
+        In ``collections`` mode the reshaped STAC Collection is returned as-is
+        (the parent's item-oriented prev/next fields are dropped). In
+        ``items`` mode, for a collection-scoped resource an id that resolves
+        to a row in a different collection is treated as not found, and the
+        prev/next links are confined to the configured collection.
 
-        :param identifier: feature id
+        :param identifier: document id
         :param crs_transform_spec: `CrsTransformSpec` instance, optional
 
-        :returns: `dict` of a STAC Item
+        :returns: `dict` of a STAC Item or Collection
         """
         feature = super().get(
             identifier, crs_transform_spec=crs_transform_spec, **kwargs)
+
+        if self.mode == 'collections':
+            feature.pop('prev', None)
+            feature.pop('next', None)
+            return feature
 
         if self.collection is None:
             return feature
@@ -245,3 +350,64 @@ class STACSQLProvider(PostgreSQLProvider):
             getattr(next_item, self.id_field)
             if next_item is not None else identifier
         )
+
+    def query(self, *args, q=None, **kwargs):
+        """
+        Query the table, adding ``collections`` mode's free-text search.
+
+        In ``collections`` mode a ``q`` term is carried into
+        :meth:`_get_property_filters` as a :attr:`_Q_SENTINEL` property, which
+        turns it into a title/description ``ILIKE``; the parent runs the rest
+        of the query unchanged. In ``items`` mode ``q`` passes straight
+        through (the parent ignores it, as before).
+
+        :param q: full-text search term(s)
+
+        :returns: GeoJSON FeatureCollection
+        """
+        if q and self.mode == 'collections':
+            properties = list(kwargs.pop('properties', None) or [])
+            properties.append((self._Q_SENTINEL, q))
+            kwargs['properties'] = properties
+            q = None
+
+        return super().query(*args, q=q, **kwargs)
+
+    def _get_datetime_filter(self, datetime_):
+        """
+        Filter on the temporal extent.
+
+        In ``collections`` mode a collection matches when its
+        ``[start_datetime, end_datetime]`` extent *overlaps* the requested
+        instant or interval, with a NULL bound treated as open (unbounded).
+        In ``items`` mode this defers to the parent's single-column filter.
+
+        :param datetime_: temporal instant or ``begin/end`` interval
+
+        :returns: SQLAlchemy filter expression
+        """
+        if self.mode != 'collections':
+            return super()._get_datetime_filter(datetime_)
+
+        if datetime_ in (None, '../..'):
+            return True
+
+        start_col = getattr(self.table_model, self.start_datetime_field)
+        end_col = getattr(self.table_model, self.end_datetime_field)
+
+        if '/' in datetime_:
+            lower, upper = datetime_.split('/')
+            lower = None if lower == '..' else lower
+            upper = None if upper == '..' else upper
+        else:
+            lower = upper = datetime_
+
+        clauses = []
+        if upper is not None:
+            clauses.append(or_(start_col.is_(None), start_col <= upper))
+        if lower is not None:
+            clauses.append(or_(end_col.is_(None), end_col >= lower))
+
+        if not clauses:
+            return True
+        return clauses[0] if len(clauses) == 1 else and_(*clauses)

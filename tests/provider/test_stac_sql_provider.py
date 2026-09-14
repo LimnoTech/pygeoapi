@@ -53,6 +53,16 @@ class _FakeItems(_Base):
     type = Column(String)
 
 
+class _FakeCollections(_Base):
+    """Minimal stand-in for the reflected stac_collections model."""
+    __tablename__ = 'stac_collections'
+    id = Column(String, primary_key=True)
+    title = Column(String)
+    description = Column(String)
+    start_datetime = Column(String)
+    end_datetime = Column(String)
+
+
 class _Row:
     """Stand-in for a reflected SQLAlchemy row (attributes via __dict__)."""
     def __init__(self, **attrs):
@@ -74,8 +84,49 @@ def _make_provider(collection=None):
     return provider
 
 
+def _make_collections_provider():
+    """Build a collections-mode provider without a DB connection."""
+    provider = STACSQLProvider.__new__(STACSQLProvider)
+    provider.mode = 'collections'
+    provider.id_field = 'id'
+    provider.geom = 'geometry'
+    provider.collection_field = 'collection'
+    provider.collection = None
+    provider.start_datetime_field = 'start_datetime'
+    provider.end_datetime_field = 'end_datetime'
+    provider.table_model = _FakeCollections  # type: ignore[assignment]
+    return provider
+
+
 def _compile(expr):
     return str(expr.compile(compile_kwargs={'literal_binds': True}))
+
+
+def _full_collection_row(**overrides):
+    attrs = {
+        'id': 'nlcd-LndCov',
+        'type': 'Collection',
+        'stac_version': '1.1.0',
+        'title': 'NLCD Land Cover',
+        'description': 'Annual NLCD land cover',
+        'license': 'proprietary',
+        'extent': {'spatial': {'bbox': [[-180, -90, 180, 90]]}},
+        'links': [{'rel': 'self', 'href': 'https://example/c'}],
+        'assets': {'thumbnail': {'href': 's3://x.png'}},
+        'summaries': {'datetime': ['2006']},
+        'stac_extensions': ['https://example/ext.json'],
+        'sci:doi': '10.5066/example',
+        'cube:dimensions': {'x': {}},
+        'cube:variables': {'v': {}},
+        'properties': {'extra': 'kept'},
+        'geometry': {'type': 'Polygon', 'coordinates': []},
+        'start_datetime': '2001-01-01T00:00:00Z',
+        'end_datetime': '2021-12-31T00:00:00Z',
+        'created_at': '2026-01-01T00:00:00Z',
+        'updated_at': '2026-01-01T00:00:00Z',
+    }
+    attrs.update(overrides)
+    return _Row(**attrs)
 
 
 def _full_row(**overrides):
@@ -184,14 +235,105 @@ def test_property_filters_scoped_ands_with_properties():
 
 # ---- mode switch ---------------------------------------------------------
 
-def test_collections_mode_not_yet_implemented():
-    # The collections reshape is planned but unbuilt; configuring the mode
-    # must fail fast (the guard runs before the parent constructor connects),
-    # not silently fall back to item behaviour.
-    with pytest.raises(NotImplementedError):
-        STACSQLProvider({'mode': 'collections'})
-
-
 def test_unknown_mode_rejected():
     with pytest.raises(ValueError):
         STACSQLProvider({'mode': 'nonsense'})
+
+
+# ---- collections reshape -------------------------------------------------
+
+def test_collection_reshape_lifts_stac_fields():
+    coll = _make_collections_provider()._sqlalchemy_to_feature(
+        _full_collection_row())
+
+    assert coll['type'] == 'Collection'
+    assert coll['id'] == 'nlcd-LndCov'
+    assert coll['stac_version'] == '1.1.0'
+    assert coll['title'] == 'NLCD Land Cover'
+    assert coll['license'] == 'proprietary'
+    assert coll['extent'] == {'spatial': {'bbox': [[-180, -90, 180, 90]]}}
+    assert coll['assets'] == {'thumbnail': {'href': 's3://x.png'}}
+    assert coll['links'] == [{'rel': 'self', 'href': 'https://example/c'}]
+
+
+def test_collection_reshape_lifts_extension_and_properties_blobs():
+    coll = _make_collections_provider()._sqlalchemy_to_feature(
+        _full_collection_row())
+
+    assert coll['sci:doi'] == '10.5066/example'
+    assert coll['cube:dimensions'] == {'x': {}}
+    assert coll['cube:variables'] == {'v': {}}
+    # residual JSONB properties merge to top level
+    assert coll['extra'] == 'kept'
+
+
+def test_collection_reshape_drops_derived_columns():
+    coll = _make_collections_provider()._sqlalchemy_to_feature(
+        _full_collection_row())
+
+    for key in ('geometry', 'bbox', 'start_datetime', 'end_datetime',
+                'created_at', 'updated_at', 'properties'):
+        assert key not in coll
+
+
+def test_collection_reshape_defaults_for_missing_fields():
+    row = _Row(id='c1')
+    coll = _make_collections_provider()._sqlalchemy_to_feature(row)
+
+    assert coll['type'] == 'Collection'
+    assert coll['stac_version'] == DEFAULT_STAC_VERSION
+    assert coll['description'] == ''
+    assert coll['links'] == []
+    assert 'title' not in coll
+
+
+# ---- collections datetime overlap ----------------------------------------
+
+def test_datetime_overlap_instant():
+    expr = _make_collections_provider()._get_datetime_filter(
+        '2010-01-01T00:00:00Z')
+    sql = _compile(expr)
+
+    assert 'start_datetime' in sql
+    assert 'end_datetime' in sql
+    assert 'IS NULL' in sql  # open (NULL) bounds treated as unbounded
+
+
+def test_datetime_overlap_open_ended_range():
+    # begin/.. -> only the lower-bound (end >= begin) clause is emitted
+    expr = _make_collections_provider()._get_datetime_filter(
+        '2010-01-01T00:00:00Z/..')
+    sql = _compile(expr)
+
+    assert 'end_datetime' in sql
+    assert 'start_datetime' not in sql
+
+
+def test_datetime_open_interval_is_passthrough():
+    assert _make_collections_provider()._get_datetime_filter('../..') is True
+    assert _make_collections_provider()._get_datetime_filter(None) is True
+
+
+# ---- collections free-text (q) -------------------------------------------
+
+def test_freetext_builds_title_description_ilike():
+    provider = _make_collections_provider()
+    expr = provider._get_property_filters([(provider._Q_SENTINEL, 'land')])
+    sql = _compile(expr).lower()
+
+    assert 'title' in sql
+    assert 'description' in sql
+    # .ilike() renders case-insensitively: the postgres ILIKE operator on a
+    # live DB, lower(..) LIKE lower(..) under the default compile dialect.
+    assert 'like' in sql
+    assert 'lower' in sql
+    assert 'land' in sql
+
+
+def test_freetext_sentinel_not_treated_as_column_filter():
+    # The sentinel is consumed, not passed to the parent equality filter.
+    provider = _make_collections_provider()
+    expr = provider._get_property_filters([(provider._Q_SENTINEL, 'x')])
+    sql = _compile(expr).lower()
+
+    assert provider._Q_SENTINEL.lower() not in sql
