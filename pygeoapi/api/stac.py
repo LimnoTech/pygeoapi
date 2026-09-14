@@ -54,7 +54,8 @@ from pygeoapi.plugin import load_plugin
 
 from pygeoapi.provider import get_provider_by_type
 from pygeoapi.provider.base import (
-    ProviderConnectionError, ProviderNotFoundError, ProviderTypeError
+    ProviderConnectionError, ProviderItemNotFoundError,
+    ProviderNotFoundError, ProviderTypeError
 )
 from pygeoapi.util import (filter_dict_by_key_value, get_current_datetime,
                            render_j2_template, to_json)
@@ -255,9 +256,14 @@ def landing_page(api: API,
     content['stac_version'] = '1.0.0'
     content['conformsTo'] = [
         'https://api.stacspec.org/v1.0.0/core',
+        'https://api.stacspec.org/v1.0.0/collections',
         'https://api.stacspec.org/v1.0.0/item-search',
         'https://api.stacspec.org/v1.0.0/item-search#sort',
         'https://api.stacspec.org/v1.0.0/item-search#filter',
+        'https://api.stacspec.org/v1.0.0-rc.1/collection-search',
+        'https://api.stacspec.org/v1.0.0-rc.1/collection-search#free-text',
+        'https://api.stacspec.org/v1.0.0-rc.1/collection-search#sort',
+        'https://api.stacspec.org/v1.0.0-rc.1/collection-search#filter',
         'http://www.opengis.net/spec/cql2/1.0/conf/cql2-text',
         'http://www.opengis.net/spec/cql2/1.0/conf/cql2-json',
         'http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2'
@@ -290,6 +296,11 @@ def landing_page(api: API,
         'type': FORMAT_TYPES[F_JSON],
         'title': l10n.translate('STAC API search', request.locale),
         'href': f"{api.base_url}/stac-api/search?f={F_JSON}"
+    }, {
+        'rel': 'data',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('STAC API collections', request.locale),
+        'href': f"{api.base_url}/stac-api/collections?f={F_JSON}"
     }]
 
     return headers, status, to_json(content, api.pretty_print)
@@ -305,39 +316,20 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
     :returns: tuple of headers, status code, content
     """
 
-    stac_api_collections = {}
-
     request._format = F_JSON
 
     headers = request.get_response_headers(**api.api_headers)
 
-    LOGGER.debug('Checking for STAC collections')
-    collections = filter_dict_by_key_value(api.config['resources'],
-                                           'type', 'stac-collection')
+    LOGGER.debug('Checking for STAC item collections')
+    # Item search fans out only over ``items``-mode resources; a
+    # ``collections``-mode resource (served by /stac-api/collections) is not
+    # an item source and must be excluded here.
+    stac_api_collections = _stac_api_resources(api, 'items')
 
-    if not collections:
+    if not stac_api_collections:
         return api.get_exception(
             HTTPStatus.NOT_IMPLEMENTED, headers, F_JSON, 'NotImplemented',
             'No configured STAC searchable collection')
-
-    LOGGER.debug('Checking for STAC collections with features or records')
-    for key, value in collections.items():
-        found_collection = False
-        for fr in ['feature', 'record']:
-            try:
-                _ = get_provider_by_type(value['providers'], fr)
-                found_collection = True
-                break
-            except ProviderTypeError:
-                pass
-
-        if found_collection:
-            stac_api_collections[key] = value
-
-    if not stac_api_collections:
-        msg = 'No STAC API collections configured'
-        return api.get_exception(HTTPStatus.INTERNAL_SERVER_ERROR, headers,
-                                 request.format, 'NotApplicable', msg)
 
     if request.data:
         LOGGER.debug('Intercepting STAC POST request into query args')
@@ -527,6 +519,293 @@ def search(api: API, request: Union[APIRequest, Any]) -> Tuple[dict, int, str]:
         })
 
     return headers, HTTPStatus.OK, to_json(stac_api_response, api.pretty_print)
+
+
+def _stac_api_resources(api: API, mode: str) -> dict:
+    """
+    Return ``stac-collection`` resources whose feature/record provider is a
+    STAC SQL provider configured for ``mode`` (``items`` or ``collections``).
+
+    :param api: API instance
+    :param mode: provider mode to match
+
+    :returns: `dict` of matching resource key -> config
+    """
+    matches = {}
+    stac = filter_dict_by_key_value(
+        api.config['resources'], 'type', 'stac-collection')
+
+    for key, value in stac.items():
+        for pt in ('feature', 'record'):
+            try:
+                pdef = get_provider_by_type(value['providers'], pt)
+            except ProviderTypeError:
+                continue
+            if pdef.get('mode', 'items') == mode:
+                matches[key] = value
+            break
+
+    return matches
+
+
+def _search_paging_links(api: API, request: APIRequest, base_path: str,
+                         number_matched: int, number_returned: int) -> list:
+    """
+    Build prev/next paging links for a STAC API search-style response.
+
+    :param api: API instance
+    :param request: APIRequest instance (its ``_args`` carry limit/offset)
+    :param base_path: absolute URL the links point at
+    :param number_matched: total matched across the query
+    :param number_returned: number returned on this page
+
+    :returns: `list` of prev/next link relations (possibly empty)
+    """
+    links = []
+    request_params = deepcopy(dict(request._args))
+    limit = itemtypes_api.evaluate_limit(
+        request_params.get('limit'),
+        api.config['server'].get('limits', {}), {})
+    offset = int(request_params.get('offset', 0))
+
+    next_link = number_matched > (limit + offset) or number_returned == limit
+    prev_link = offset > 0
+
+    if prev_link:
+        request_params['offset'] = max(0, offset - limit)
+        if request_params['offset'] == 0:
+            request_params.pop('offset')
+        links.append({
+            'rel': 'prev',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': l10n.translate('Collections (prev)', request.locale),
+            'href': f'{base_path}?{urlencode(request_params)}'
+        })
+
+    if next_link:
+        request_params['offset'] = offset + limit
+        links.append({
+            'rel': 'next',
+            'type': FORMAT_TYPES[F_JSON],
+            'title': l10n.translate('Collections (next)', request.locale),
+            'href': f'{base_path}?{urlencode(request_params)}'
+        })
+
+    return links
+
+
+def _rewrite_collection_links(base_url: str, collection: dict) -> list:
+    """
+    Replace a STAC Collection's navigation links with absolute STAC API links.
+
+    Mirrors :func:`_rewrite_item_links` for Collections: portable absolute
+    links (e.g. ``cite-as``) are preserved, while ``self``/``root``/
+    ``parent``/``items`` are rewritten to resolve against the API.
+
+    :param base_url: `str` of the API base URL
+    :param collection: `dict` of a STAC Collection
+
+    :returns: `list` of link relations
+    """
+    stac_url = f'{base_url}/stac-api'
+    cid = collection.get('id')
+
+    preserved = [
+        link for link in (collection.get('links') or [])
+        if link.get('rel') not in STAC_NAV_RELS
+        and link.get('rel') != 'items'
+        and str(link.get('href', '')).startswith(('http://', 'https://'))
+    ]
+
+    links = [{
+        'rel': 'self',
+        'type': FORMAT_TYPES[F_JSON],
+        'href': f'{stac_url}/collections/{cid}?f={F_JSON}'
+    }, {
+        'rel': 'root',
+        'type': FORMAT_TYPES[F_JSON],
+        'href': f'{stac_url}?f={F_JSON}'
+    }, {
+        'rel': 'parent',
+        'type': FORMAT_TYPES[F_JSON],
+        'href': f'{stac_url}?f={F_JSON}'
+    }, {
+        'rel': 'items',
+        'type': 'application/geo+json',
+        'href': f'{stac_url}/collections/{cid}/items'
+    }]
+
+    return preserved + links
+
+
+def get_collections(api: API, request: APIRequest) -> Tuple[dict, int, str]:
+    """
+    STAC API collections listing + search (the collection-search extension).
+
+    Fans out over the configured ``collections``-mode resources, reusing the
+    OGC feature item machinery (which parses bbox/datetime/limit/sortby/filter
+    and ``q``), and reshapes the result into a STAC Collections document.
+
+    :param api: API instance
+    :param request: APIRequest instance with query params
+
+    :returns: tuple of headers, status code, content
+    """
+    request._format = F_JSON
+    headers = request.get_response_headers(**api.api_headers)
+
+    resources = _stac_api_resources(api, 'collections')
+    if not resources:
+        return api.get_exception(
+            HTTPStatus.NOT_IMPLEMENTED, headers, F_JSON, 'NotImplemented',
+            'No configured STAC collections source')
+
+    response = {
+        'collections': [],
+        'links': [],
+        'numberMatched': 0,
+        'numberReturned': 0
+    }
+
+    for key, value in resources.items():
+        api.config['resources'][key]['type'] = 'collection'
+        h, status, content = itemtypes_api.get_collection_items(
+            api, request, key)
+        api.config['resources'][key]['type'] = 'stac-collection'
+
+        if status != HTTPStatus.OK:
+            return h, status, content
+
+        content = json.loads(content)
+        response['numberMatched'] += content.get('numberMatched', 0)
+        for collection in content.get('features', []):
+            collection['links'] = _rewrite_collection_links(
+                api.base_url, collection)
+            response['collections'].append(collection)
+
+    response['numberReturned'] = len(response['collections'])
+
+    stac_url = f'{api.base_url}/stac-api'
+    response['links'].append({
+        'rel': 'root',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('STAC API landing page', request.locale),
+        'href': f'{stac_url}?f={F_JSON}'
+    })
+    response['links'].append({
+        'rel': 'self',
+        'type': FORMAT_TYPES[F_JSON],
+        'title': l10n.translate('STAC API collections', request.locale),
+        'href': f'{stac_url}/collections?f={F_JSON}'
+    })
+    response['links'].extend(_search_paging_links(
+        api, request, f'{stac_url}/collections',
+        response['numberMatched'], response['numberReturned']))
+
+    return headers, HTTPStatus.OK, to_json(response, api.pretty_print)
+
+
+def get_collection(api: API, request: APIRequest,
+                   collection_id: str) -> Tuple[dict, int, str]:
+    """
+    STAC API single Collection by id.
+
+    :param api: API instance
+    :param request: APIRequest instance
+    :param collection_id: STAC collection id
+
+    :returns: tuple of headers, status code, content
+    """
+    request._format = F_JSON
+    headers = request.get_response_headers(**api.api_headers)
+
+    resources = _stac_api_resources(api, 'collections')
+    if not resources:
+        return api.get_exception(
+            HTTPStatus.NOT_IMPLEMENTED, headers, F_JSON, 'NotImplemented',
+            'No configured STAC collections source')
+
+    for key, value in resources.items():
+        try:
+            p = load_plugin('provider', get_provider_by_type(
+                value['providers'], 'feature'))
+            collection = p.get(collection_id)
+        except (ProviderConnectionError, ProviderTypeError):
+            continue
+        except ProviderItemNotFoundError:
+            continue
+
+        collection['links'] = _rewrite_collection_links(
+            api.base_url, collection)
+        return headers, HTTPStatus.OK, to_json(collection, api.pretty_print)
+
+    return api.get_exception(
+        HTTPStatus.NOT_FOUND, headers, F_JSON, 'NotFound',
+        'Collection not found')
+
+
+def get_collection_items(api: API, request: APIRequest,
+                         collection_id: str) -> Tuple[dict, int, str]:
+    """
+    STAC API items within one Collection.
+
+    Thin wrapper over :func:`search` scoped to ``collection_id`` so a
+    Collection's ``items`` link resolves.
+
+    :param api: API instance
+    :param request: APIRequest instance
+    :param collection_id: STAC collection id
+
+    :returns: tuple of headers, status code, content
+    """
+    request._args = {**dict(request.params), 'collections': collection_id}
+    return search(api, request)
+
+
+def get_collection_item(api: API, request: APIRequest, collection_id: str,
+                        item_id: str) -> Tuple[dict, int, str]:
+    """
+    STAC API single Item by id within a Collection (so ``self`` links resolve).
+
+    :param api: API instance
+    :param request: APIRequest instance
+    :param collection_id: STAC collection id the item must belong to
+    :param item_id: STAC item id
+
+    :returns: tuple of headers, status code, content
+    """
+    request._format = F_JSON
+    headers = request.get_response_headers(**api.api_headers)
+
+    resources = _stac_api_resources(api, 'items')
+    if not resources:
+        return api.get_exception(
+            HTTPStatus.NOT_IMPLEMENTED, headers, F_JSON, 'NotImplemented',
+            'No configured STAC items source')
+
+    for key, value in resources.items():
+        try:
+            p = load_plugin('provider', get_provider_by_type(
+                value['providers'], 'feature'))
+            item = p.get(item_id)
+        except (ProviderConnectionError, ProviderTypeError):
+            continue
+        except ProviderItemNotFoundError:
+            continue
+
+        if item.get('collection') != collection_id:
+            continue
+
+        item.pop('prev', None)
+        item.pop('next', None)
+        if 'stac_version' not in item:
+            item['stac_version'] = '1.0.0'
+        item.setdefault('assets', {})
+        item['links'] = _rewrite_item_links(api.base_url, item)
+        return headers, HTTPStatus.OK, to_json(item, api.pretty_print)
+
+    return api.get_exception(
+        HTTPStatus.NOT_FOUND, headers, F_JSON, 'NotFound', 'Item not found')
 
 
 def get_oas_30(cfg: dict, locale: str) -> tuple[list[dict[str, str]], dict[str, dict]]:  # noqa

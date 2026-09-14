@@ -616,6 +616,61 @@ async def stac_search(request: Request) -> Response:
     return await execute_from_starlette(stac_api.search, request)
 
 
+async def stac_collections(request: Request) -> Response:
+    """
+    STAC API collections listing/search endpoint
+
+    :param request: Starlette Request instance
+
+    :returns: Starlette HTTP response
+    """
+
+    return await execute_from_starlette(stac_api.get_collections, request)
+
+
+async def stac_collection(request: Request) -> Response:
+    """
+    STAC API single collection endpoint
+
+    :param request: Starlette Request instance
+
+    :returns: Starlette HTTP response
+    """
+
+    collection_id = request.path_params["collection_id"]
+    return await execute_from_starlette(
+        stac_api.get_collection, request, collection_id)
+
+
+async def stac_collection_items(request: Request) -> Response:
+    """
+    STAC API items-within-a-collection endpoint
+
+    :param request: Starlette Request instance
+
+    :returns: Starlette HTTP response
+    """
+
+    collection_id = request.path_params["collection_id"]
+    return await execute_from_starlette(
+        stac_api.get_collection_items, request, collection_id)
+
+
+async def stac_collection_item(request: Request) -> Response:
+    """
+    STAC API single item endpoint
+
+    :param request: Starlette Request instance
+
+    :returns: Starlette HTTP response
+    """
+
+    collection_id = request.path_params["collection_id"]
+    item_id = request.path_params["item_id"]
+    return await execute_from_starlette(
+        stac_api.get_collection_item, request, collection_id, item_id)
+
+
 async def admin_config(request: Request) -> Response:
     """
     Admin endpoint
@@ -761,7 +816,13 @@ api_routes = [
     Route('/stac', stac_catalog_root),
     Route('/stac/{path:path}', stac_catalog_path),
     Route('/stac-api', stac_landing_page),
-    Route('/stac-api/search', stac_search, methods=['GET', 'POST'])
+    Route('/stac-api/search', stac_search, methods=['GET', 'POST']),
+    Route('/stac-api/collections', stac_collections),
+    Route('/stac-api/collections/{collection_id}/items/{item_id}',
+          stac_collection_item),
+    Route('/stac-api/collections/{collection_id}/items',
+          stac_collection_items),
+    Route('/stac-api/collections/{collection_id}', stac_collection)
 ]
 
 admin_routes = [
