@@ -27,17 +27,19 @@
 #
 # =================================================================
 
-# These are unit tests for the two seams STACItemsProvider adds on top of
-# PostgreSQLProvider -- the row->STAC-Item reshape and the collection scope.
-# They do not require a live database: the provider is instantiated without
-# connecting (``__new__``) and the reshape/filter methods are exercised
-# directly. End-to-end coverage against a real ``stac_items`` table belongs in
-# an integration test alongside test_postgresql_provider.py.
+# These are unit tests for the seams STACSQLProvider adds on top of
+# PostgreSQLProvider -- the row->STAC-Item reshape, the collection scope, and
+# the ``mode`` switch. They do not require a live database: the provider is
+# instantiated without connecting (``__new__``) and the reshape/filter methods
+# are exercised directly, while the mode guard runs before the parent
+# constructor connects. End-to-end coverage against a real ``stac_items`` table
+# belongs in an integration test alongside test_postgresql_provider.py.
 
+import pytest
 from sqlalchemy import Column, String
 from sqlalchemy.orm import declarative_base
 
-from pygeoapi.provider.stac_sql import STACItemsProvider, DEFAULT_STAC_VERSION
+from pygeoapi.provider.stac_sql import STACSQLProvider, DEFAULT_STAC_VERSION
 
 
 _Base = declarative_base()
@@ -59,7 +61,8 @@ class _Row:
 
 def _make_provider(collection=None):
     """Build a provider without running __init__ (no DB connection)."""
-    provider = STACItemsProvider.__new__(STACItemsProvider)
+    provider = STACSQLProvider.__new__(STACSQLProvider)
+    provider.mode = 'items'
     provider.id_field = 'id'
     provider.geom = 'geometry'
     provider.collection_field = 'collection'
@@ -177,3 +180,18 @@ def test_property_filters_scoped_ands_with_properties():
     assert 'nlcd-LndCov' in sql
     assert 'stac_items.type' in sql
     assert 'Feature' in sql
+
+
+# ---- mode switch ---------------------------------------------------------
+
+def test_collections_mode_not_yet_implemented():
+    # The collections reshape is planned but unbuilt; configuring the mode
+    # must fail fast (the guard runs before the parent constructor connects),
+    # not silently fall back to item behaviour.
+    with pytest.raises(NotImplementedError):
+        STACSQLProvider({'mode': 'collections'})
+
+
+def test_unknown_mode_rejected():
+    with pytest.raises(ValueError):
+        STACSQLProvider({'mode': 'nonsense'})

@@ -42,44 +42,67 @@ LOGGER = logging.getLogger(__name__)
 #: STAC version to advertise when a row does not carry its own
 DEFAULT_STAC_VERSION = '1.0.0'
 
+#: Recognised provider modes -- which flavour of STAC document the configured
+#: table holds. Only ``items`` is implemented today; ``collections`` is a
+#: planned mode (see the collections-search work) and is rejected until built.
+SUPPORTED_MODES = ('items', 'collections')
 
-class STACItemsProvider(PostgreSQLProvider):
+
+class STACSQLProvider(PostgreSQLProvider):
     """
-    Serve rows of a STAC Items table as valid STAC Item GeoJSON Features.
+    Serve rows of a STAC SQL table as valid STAC documents.
 
     The generic :class:`~pygeoapi.provider.sql.PostgreSQLProvider` flattens
-    every table column into ``feature['properties']``. For a STAC Items table
-    whose columns *are* the top-level fields of a STAC Item (``collection``,
+    every table column into ``feature['properties']``. For a STAC table whose
+    columns *are* the top-level fields of a STAC document (``collection``,
     ``stac_version``, ``bbox``, ``assets``, ``links`` and a JSONB
-    ``properties`` blob) that produces an invalid Item with buried assets and
-    a doubly-nested properties bag. This provider reuses all of the parent's
-    engine, reflection, filtering and paging machinery and overrides only:
+    ``properties`` blob) that produces an invalid document with buried assets
+    and a doubly-nested properties bag. This provider reuses all of the
+    parent's engine, reflection, filtering and paging machinery and overrides
+    only the seams needed to reshape rows into valid STAC.
 
-    - :meth:`_sqlalchemy_to_feature` -- reshape a row into a STAC Item.
-    - collection scoping -- when a ``collection`` is configured, restrict
-      every query to that collection so a single ``stac_items`` table can
-      back many single-collection pygeoapi resources.
+    The ``mode`` definition key selects which STAC document the table holds:
+
+    - ``items`` (default) -- reshape ``stac_items`` rows into STAC Items and,
+      when a ``collection`` is configured, scope every query to it so a single
+      ``stac_items`` table can back many single-collection resources.
+    - ``collections`` -- reshape ``stac_collections`` rows into STAC
+      Collections. Planned for the collections-search work; not yet
+      implemented (raises :class:`NotImplementedError`).
 
     Provider definition keys (in addition to the PostgreSQL provider's):
 
-    :collection: STAC collection id to scope this resource to (optional; when
-                 omitted the provider serves every collection in the table)
+    :mode: ``items`` (default) or ``collections`` -- the kind of STAC document
+           this table holds
+    :collection: STAC collection id to scope an ``items`` resource to
+                 (optional; when omitted the provider serves every collection
+                 in the table)
     :collection_field: name of the column holding the collection id
                        (default ``collection``)
     """
 
     def __init__(self, provider_def: dict):
         """
-        STACItemsProvider constructor
+        STACSQLProvider constructor
 
         :param provider_def: provider definition
 
-        :returns: pygeoapi.provider.stac_sql.STACItemsProvider
+        :returns: pygeoapi.provider.stac_sql.STACSQLProvider
         """
+        self.mode = provider_def.get('mode', 'items')
+        if self.mode not in SUPPORTED_MODES:
+            raise ValueError(
+                f'Unsupported STAC provider mode: {self.mode!r} '
+                f'(expected one of {SUPPORTED_MODES})')
+        if self.mode == 'collections':
+            raise NotImplementedError(
+                'STACSQLProvider collections mode is not yet implemented')
+
         self.collection_field = provider_def.get(
             'collection_field', 'collection')
         self.collection = provider_def.get('collection')
         super().__init__(provider_def)
+        LOGGER.debug(f'Mode: {self.mode}')
         LOGGER.debug(f'Collection field: {self.collection_field}')
         LOGGER.debug(f'Collection scope: {self.collection}')
 
