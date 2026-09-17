@@ -553,6 +553,59 @@ def stac_search():
     return execute_from_flask(stac_api.search, request)
 
 
+@BLUEPRINT.route('/stac-api/collections')
+def stac_collections():
+    """
+    STAC API collections listing/search endpoint
+
+    :returns: HTTP response
+    """
+
+    return execute_from_flask(stac_api.get_collections, request)
+
+
+@BLUEPRINT.route('/stac-api/collections/<collection_id>')
+def stac_collection(collection_id: str):
+    """
+    STAC API single collection endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    return execute_from_flask(stac_api.get_collection, request, collection_id)
+
+
+@BLUEPRINT.route('/stac-api/collections/<collection_id>/items')
+def stac_collection_items(collection_id: str):
+    """
+    STAC API items-within-a-collection endpoint
+
+    :param collection_id: collection identifier
+
+    :returns: HTTP response
+    """
+
+    return execute_from_flask(
+        stac_api.get_collection_items, request, collection_id)
+
+
+@BLUEPRINT.route('/stac-api/collections/<collection_id>/items/<item_id>')
+def stac_collection_item(collection_id: str, item_id: str):
+    """
+    STAC API single item endpoint
+
+    :param collection_id: collection identifier
+    :param item_id: item identifier
+
+    :returns: HTTP response
+    """
+
+    return execute_from_flask(
+        stac_api.get_collection_item, request, collection_id, item_id)
+
+
 @BLUEPRINT.route('/stac')
 def stac_catalog_root():
     """
