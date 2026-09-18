@@ -126,7 +126,13 @@ class HateoasProvider(BaseProvider):
             except Exception:
                 try:
                     filename = os.path.basename(data_path)
-                    jsondata = _get_json_data(f'{data_path}/{filename}.json')
+                    parent_dir = os.path.dirname(data_path)
+                    manifest = _get_json_data(f'{parent_dir}/collection.json')
+                    hrefs = {
+                        os.path.splitext(os.path.basename(link['href']))[0]: link['href']
+                        for link in manifest['links']
+                    }
+                    jsondata = _get_json_data(f'{parent_dir}/{hrefs[filename]}')
                     resource_type = 'Assets'
                 except Exception:
                     msg = f'Resource does not exist: {data_path}'
@@ -146,7 +152,7 @@ class HateoasProvider(BaseProvider):
             for link in link_href_list:
                 unused, path_ending, entry_type = link.split('/')
                 newpath = os.path.join(baseurl, urlpath, path_ending).replace('\\', '/') # noqa
-
+                
                 if entry_type == 'catalog.json':
                     child_links.append({
                         'rel': 'child',
@@ -164,10 +170,12 @@ class HateoasProvider(BaseProvider):
                         'entry:type': 'Collection'
                     })
                 else:
+                    item_id = os.path.splitext(entry_type)[0]
+                    itempath = os.path.join(baseurl, urlpath, item_id).replace('\\', '/')  # noqa
                     child_links.append({
                         'rel': 'item',
-                        'href': newpath,
-                        'title': path_ending,
+                        'href': itempath,
+                        'title': item_id,
                         'created': "-",
                         'entry:type': 'Item'
                     })
