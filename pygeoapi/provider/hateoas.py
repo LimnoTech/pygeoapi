@@ -152,7 +152,7 @@ class HateoasProvider(BaseProvider):
             for link in link_href_list:
                 unused, path_ending, entry_type = link.split('/')
                 newpath = os.path.join(baseurl, urlpath, path_ending).replace('\\', '/') # noqa
-                
+
                 if entry_type == 'catalog.json':
                     child_links.append({
                         'rel': 'child',
